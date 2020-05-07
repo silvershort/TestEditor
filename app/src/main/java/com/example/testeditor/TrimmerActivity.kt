@@ -1,10 +1,13 @@
 package com.example.testeditor
 
+import android.content.Context
 import android.graphics.Typeface
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
+import android.view.View
 import com.video.trimmer.interfaces.OnTrimVideoListener
 import kotlinx.android.synthetic.main.activity_trimmer.*
 import java.io.File
@@ -15,7 +18,12 @@ class TrimmerActivity : AppCompatActivity(), OnTrimVideoListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_trimmer)
 
+        setSupportActionBar(trim_toolbar)
+        supportActionBar?.setDisplayShowHomeEnabled(false)
+        supportActionBar?.setHomeButtonEnabled(true)
+
         val path:String? = intent.getStringExtra("path")
+        Log.d("로그", "path $path")
 
         trim_trimmer.setTextTimeSelectionTypeface(Typeface.SANS_SERIF)
             .setOnTrimVideoListener(this)
@@ -23,22 +31,27 @@ class TrimmerActivity : AppCompatActivity(), OnTrimVideoListener {
             .setVideoInformationVisibility(true)
             .setMaxDuration(10)
             .setMinDuration(2)
-            .setDestinationPath(Environment.getExternalStorageDirectory().toString() + File.separator + "temp")
+            .setDestinationPath(cacheDir.absolutePath + "/temp")
+
+        trim_tv_complete.setOnClickListener(View.OnClickListener {
+            trim_trimmer.onSaveClicked()
+            finish()
+        })
     }
 
     override fun cancelAction() {
-        TODO("Not yet implemented")
+        Log.d("로그", "취소됨")
     }
 
     override fun getResult(uri: Uri) {
-        TODO("Not yet implemented")
+        Log.d("로그", "변환 성공 : $uri")
     }
 
     override fun onError(message: String) {
-        TODO("Not yet implemented")
+        Log.d("로그", "에러 발생 $message")
     }
 
     override fun onTrimStarted() {
-        TODO("Not yet implemented")
+        Log.d("로그", "저장 시작")
     }
 }

@@ -7,48 +7,90 @@
     android:background="@android:color/black"
     tools:context=".MainActivity">
 
-    <com.google.android.exoplayer2.ui.PlayerView
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/main_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?actionBarSize"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/main_tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textSize="16sp"
+            android:text="비디오 편집"/>
+
+        <TextView
+            android:id="@+id/main_tv_complete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginRight="16sp"
+            android:textSize="14sp"
+            android:text="완료"/>
+
+    </androidx.appcompat.widget.Toolbar>
+
+    <RelativeLayout
         android:id="@+id/main_playerview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:show_buffering="true" />
+        android:layout_height="0dp"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@+id/main_toolbar"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
     <LinearLayout
         android:id="@+id/main_layout_button"
-        android:layout_width="30dp"
+        android:layout_width="40dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="40dp"
         android:layout_marginEnd="20dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/main_toolbar">
 
         <ImageButton
             android:id="@+id/main_ib_add"
-            android:layout_width="30dp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="5dp"
             android:adjustViewBounds="true"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_add_black_24dp" />
 
         <ImageButton
             android:id="@+id/main_ib_trim"
-            android:layout_width="30dp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="5dp"
             android:adjustViewBounds="true"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_content_cut_black_24dp" />
 
         <ImageButton
             android:id="@+id/main_ib_crop"
-            android:layout_width="30dp"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
             android:adjustViewBounds="true"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_crop_black_24dp" />
 
+        <ImageButton
+            android:id="@+id/main_ib_filter"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_bubble_chart_black_24dp" />
+
     </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/main_recycler_filter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
