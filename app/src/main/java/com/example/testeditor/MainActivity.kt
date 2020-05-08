@@ -1,10 +1,13 @@
 package com.example.testeditor
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
@@ -19,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.daasuu.gpuv.composer.GPUMp4Composer
 import com.daasuu.gpuv.egl.filter.GlFilter
 import com.daasuu.gpuv.player.GPUPlayerView
+import com.example.testeditor.dialog.CustomProgressDialog
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -28,6 +32,8 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.main_tv_complete
+import org.jetbrains.anko.toast
+import java.io.File
 import androidx.core.view.isVisible as isVisible
 
 class MainActivity : AppCompatActivity() {
@@ -46,8 +52,11 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var glFilter: GlFilter
     lateinit var filterName: String
+    lateinit var gpuMp4Composer: GPUMp4Composer
+    private val proDialog: CustomProgressDialog = CustomProgressDialog()
 
     var path: String? = null
+    var fileName: String? = null
     var uri: Uri? = null
     var savePath: String? = null
 
@@ -120,11 +129,11 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, 2222)
         })
 
-        /*main_ib_crop.setOnClickListener(View.OnClickListener {
+        main_ib_crop.setOnClickListener(View.OnClickListener {
             val intent = Intent(this, CropActivity::class.java)
             intent.putExtra("path", path)
             startActivityForResult(intent, 3333)
-        })*/
+        })
 
         main_ib_filter.setOnClickListener(View.OnClickListener {
             if (main_recycler_filter.isVisible) {
@@ -139,7 +148,6 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onAnimationStart(animation: Animation?) {
                     }
-
                 })
             } else {
                 main_recycler_filter.startAnimation(bottomUp)
@@ -150,28 +158,56 @@ class MainActivity : AppCompatActivity() {
         main_tv_complete.setOnClickListener(View.OnClickListener {
             Log.d("로그", "완료 버튼이 눌림")
             Log.d("로그", "원본 경로 : $path")
-            Log.d("로그", "저장 경로  : $savePath")
-            GPUMp4Composer(path, savePath)
+            Log.d("로그", "저장 경로 : $savePath")
+            proDialog.show(supportFragmentManager, "progressDialog")
+            proDialog.setDialogResultInterface(object: CustomProgressDialog.OnDialogResult{
+                override fun finish() {
+                    gpuMp4Composer.cancel()
+                }
+            })
+
+            val directory = File(Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST")
+            if (!directory.exists()) {
+                Log.d("로그", "path: $directory")
+                Log.d("로그", "path: $path")
+                Log.d("로그", "folder create")
+                directory.mkdir()
+            }
+
+            gpuMp4Composer = GPUMp4Composer(path, savePath)
                 .filter(FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext))
                 .listener(object: GPUMp4Composer.Listener {
                     override fun onFailed(exception: Exception?) {
                         Log.d("로그", "변환 실패 : ${exception.toString()}")
+                        proDialog.dismiss()
                     }
 
                     override fun onProgress(progress: Double) {
                         Log.d("로그", "변환 중 : $progress")
+                        proDialog.setText(progress)
                     }
 
                     override fun onCanceled() {
                         Log.d("로그", "변환 취소")
+                        toast("취소되었습니다")
                     }
 
                     override fun onCompleted() {
+                        proDialog.dismiss()
                         Log.d("로그", "변환 성공")
                         Log.d("로그", "uri : " + Uri.parse(savePath))
+
 //                        contentResolver.update(Uri.parse(savePath), ContentValues(), null, null)
+
+                        MediaScannerConnection.scanFile(applicationContext,
+                            arrayOf(savePath), null, object: MediaScannerConnection.OnScanCompletedListener{
+                                override fun onScanCompleted(path: String?, uri: Uri?) {
+
+                                }
+                            })
                     }
-                }).start()
+                })
+                gpuMp4Composer.start()
         })
     }
 
@@ -232,7 +268,9 @@ class MainActivity : AppCompatActivity() {
     private fun setFilePath(rawPath: String?) {
         path = rawPath
         if (rawPath != null) {
-            savePath = rawPath.substring(0, rawPath.length - 4) + "_modify.mp4"
+            fileName = File(path).name
+            Log.d("로그", "파일이름 : $fileName")
+            savePath = Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST/modify_" + fileName
         }
     }
 
@@ -253,7 +291,7 @@ class MainActivity : AppCompatActivity() {
                 if (data != null) {
                     path = data.getStringExtra("path")
                     Log.d("로그", "result path : $path")
-                    savePath = path!!.substring(0, path!!.length - 4) + "_modify.mp4"
+                    setFilePath(path)
                     setPlayer(path!!)
                 } else {
                     return

@@ -10,12 +10,14 @@
 
     <TextView
         android:id="@+id/progress_tv_title"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="@string/progress_dialog_title"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/progress_pro_view"/>
+        app:layout_constraintBottom_toTopOf="@+id/progress_pro_view"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <com.white.progressview.HorizontalProgressView
         android:id="@+id/progress_pro_view"

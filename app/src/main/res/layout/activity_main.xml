@@ -78,14 +78,14 @@
             android:background="@android:color/transparent"
             android:src="@drawable/ic_content_cut_black_24dp" />
 
-        <!--<ImageButton
+        <ImageButton
             android:id="@+id/main_ib_crop"
             android:layout_width="40dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="5dp"
             android:adjustViewBounds="true"
             android:background="@android:color/transparent"
-            android:src="@drawable/ic_crop_black_24dp" />-->
+            android:src="@drawable/ic_crop_black_24dp" />
 
         <ImageButton
             android:id="@+id/main_ib_filter"

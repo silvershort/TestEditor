@@ -10,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.daasuu.mp4compose.composer.Mp4Composer
+import com.example.testeditor.dialog.CustomProgressDialog
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -25,7 +26,7 @@ import org.jetbrains.anko.toast
 import java.io.File
 import java.lang.Exception
 
-class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChangedListener {
+class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChangedListener{
 
     private val trackSelector: TrackSelector = DefaultTrackSelector()
     private val dataFactory: DefaultDataSourceFactory by lazy {
@@ -82,12 +83,19 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
 
         trim_tv_complete.setOnClickListener(View.OnClickListener {
             proDialog.show(supportFragmentManager, "progressDialog")
+            proDialog.setDialogResultInterface(object: CustomProgressDialog.OnDialogResult{
+                override fun finish() {
+                    mp4Composer.cancel()
+                }
+            })
+
 
             mp4Composer = Mp4Composer(path, "${cacheDir.canonicalPath}/temp.mp4")
                 .trim(sMillis, eMillis)
                 .listener(object: Mp4Composer.Listener{
                     override fun onFailed(exception: Exception?) {
                         Log.d("로그", "변환 실패")
+                        proDialog.dismiss()
                     }
 
                     override fun onProgress(progress: Double) {
@@ -97,6 +105,7 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
 
                     override fun onCanceled() {
                         Log.d("로그", "변환 취소")
+                        toast("취소되었습니다")
                     }
 
                     override fun onCompleted() {
@@ -176,7 +185,6 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
 
     override fun onBackPressed() {
         Log.d("로그", "백버튼 눌림")
-        mp4Composer.cancel()
         releaseVideo()
         super.onBackPressed()
     }
