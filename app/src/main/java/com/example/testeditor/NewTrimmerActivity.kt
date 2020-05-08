@@ -1,9 +1,15 @@
 package com.example.testeditor
 
+import android.app.Activity
+import android.content.Intent
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
+import android.view.MenuItem
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import com.daasuu.mp4compose.composer.Mp4Composer
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -15,7 +21,9 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_new_trimmer.*
+import org.jetbrains.anko.toast
 import java.io.File
+import java.lang.Exception
 
 class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeChangedListener {
 
@@ -32,29 +40,77 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
             trim_playerView.player = it
         }
     }
-
     private val path: String by lazy { intent.getStringExtra("path") }
+    private var sMillis: Long = 0
+    private var eMillis: Long = 0
+
+    private val proDialog: CustomProgressDialog = CustomProgressDialog()
+    private lateinit var mp4Composer: Mp4Composer
+
+    override fun onResume() {
+        super.onResume()
+        if (player != null) {
+            player.playWhenReady = true
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if(player != null) {
+            player.playWhenReady = false
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_new_trimmer)
 
         setSupportActionBar(trim_toolbar)
-        actionBar?.setDisplayShowTitleEnabled(false)
-        actionBar?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        trim_videoTrimmerView
-            .setVideo(File(path))
-            .setMaxDuration(30_000)
-            .setMinDuration(3_000)
-            .setFrameCountInWindow(1)
-            .setExtraDragSpace(dpToPx(2f))
-            .setOnSelectedRangeChangedListener(this)
-            .show()
+        Handler().postDelayed({
+            trim_videoTrimmerView
+                .setVideo(File(path))
+                .setMaxDuration(30_000)
+                .setMinDuration(1_000)
+                .setFrameCountInWindow(10)
+                .setExtraDragSpace(dpToPx(2f))
+                .setOnSelectedRangeChangedListener(this)
+                .show()
+        }, 100)
 
-        playVideo(path, 1000L, 10000L)
+        trim_tv_complete.setOnClickListener(View.OnClickListener {
+            proDialog.show(supportFragmentManager, "progressDialog")
 
-        Log.d("로그", "path $path")
+            mp4Composer = Mp4Composer(path, "${cacheDir.canonicalPath}/temp.mp4")
+                .trim(sMillis, eMillis)
+                .listener(object: Mp4Composer.Listener{
+                    override fun onFailed(exception: Exception?) {
+                        Log.d("로그", "변환 실패")
+                    }
+
+                    override fun onProgress(progress: Double) {
+                        Log.d("로그", "변환 중 : $progress")
+                        proDialog.setText(progress)
+                    }
+
+                    override fun onCanceled() {
+                        Log.d("로그", "변환 취소")
+                    }
+
+                    override fun onCompleted() {
+                        proDialog.dismiss()
+                        Log.d("로그", "변환 완료")
+                        releaseVideo()
+                        val intent = Intent()
+                        intent.putExtra("path", "${cacheDir.canonicalPath}/temp.mp4")
+                        setResult(Activity.RESULT_OK, intent)
+                        finish()
+                    }
+                })
+            mp4Composer.start()
+        })
     }
 
     override fun onSelectRangeStart() {
@@ -66,6 +122,8 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
     }
 
     override fun onSelectRangeEnd(startMillis: Long, endMillis: Long) {
+        sMillis = startMillis
+        eMillis = endMillis
         showDuration(startMillis, endMillis)
         playVideo(path, startMillis, endMillis)
     }
@@ -86,13 +144,40 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
         player.prepare(source)
     }
 
+    private fun releaseVideo() {
+        player.release()
+    }
+
     private fun showDuration(startMillis: Long, endMillis: Long) {
-        val duration = (endMillis - startMillis) / 1000L
-        trim_durationView.text = "$duration seconds selected"
+        val duration: Long = (endMillis - startMillis) / 1000L
+        trim_durationView.text = "$duration ${getString(R.string.trim_selected)}"
     }
 
     private fun dpToPx(dp: Float): Float {
         val density = resources.displayMetrics.density
         return dp * density
+    }
+
+/*    private fun timeConverter(rawLong: Long): String{
+        val sec = rawLong % 1000
+        val mSec = rawLong / 1000
+        return String.format("%02d:%02d:%02d.%d", sec / 60 / 60, sec / 60 % 60, sec % 60, mSec)
+    }*/
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
+            android.R.id.home -> {
+                releaseVideo()
+                finish()
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun onBackPressed() {
+        Log.d("로그", "백버튼 눌림")
+        mp4Composer.cancel()
+        releaseVideo()
+        super.onBackPressed()
     }
 }

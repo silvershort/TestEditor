@@ -9,6 +9,8 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -21,17 +23,24 @@ import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main.main_tv_complete
+import androidx.core.view.isVisible as isVisible
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var simpleExoPlayer: SimpleExoPlayer
-    lateinit var dataFactory: DefaultDataSourceFactory
-    lateinit var renderersFactory: DefaultRenderersFactory
-    lateinit var trackSelector: DefaultTrackSelector
-    lateinit var loadControl: DefaultLoadControl
+    private val trackSelector: TrackSelector = DefaultTrackSelector()
+    private val dataFactory: DefaultDataSourceFactory by lazy {
+        DefaultDataSourceFactory(
+            this,
+            Util.getUserAgent(this, getString(R.string.app_name))
+        )
+    }
+
+    private lateinit var simpleExoPlayer: SimpleExoPlayer
     lateinit var mediaSource: MediaSource
     lateinit var gpuPlayerView: GPUPlayerView
 
@@ -47,9 +56,28 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
 
+    val bottomUp: Animation by lazy { AnimationUtils.loadAnimation(this, R.anim.bottom_up) }
+    val bottomDown: Animation by lazy { AnimationUtils.loadAnimation(this, R.anim.bottom_down) }
+
     private val GALLERY_REQUEST_CODE = 1000
     private val TRIM_REQUEST_CODE = 1001
     private val CROP_REQUEST_CODE = 1002
+
+    override fun onResume() {
+        super.onResume()
+        try {
+            simpleExoPlayer.playWhenReady = true
+        } catch (e: Exception) {
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try {
+            simpleExoPlayer.playWhenReady = false
+        } catch (e: Exception) {
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +86,7 @@ class MainActivity : AppCompatActivity() {
         setupPermissions()
 
         setSupportActionBar(main_toolbar)
-        actionBar?.setDisplayShowTitleEnabled(false)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
         val filterAdapter = FilterAdapter(FilterType.createFilterList())
         main_recycler_filter.adapter = filterAdapter
@@ -80,25 +108,43 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, 1111)
         })
 
-        main_ib_trim.setOnClickListener(View.OnClickListener {
+        /*main_ib_trim.setOnClickListener(View.OnClickListener {
             val intent = Intent(this, TrimmerActivity::class.java)
-            intent.putExtra("path", path)
-            startActivityForResult(intent, 2222)
-        })
-
-/*        main_ib_new_trim.setOnClickListener(View.OnClickListener {
-            val intent = Intent(this, NewTrimmerActivity::class.java)
             intent.putExtra("path", path)
             startActivityForResult(intent, 2222)
         })*/
 
-        main_ib_crop.setOnClickListener(View.OnClickListener {
+        main_ib_new_trim.setOnClickListener(View.OnClickListener {
+            val intent = Intent(this, NewTrimmerActivity::class.java)
+            intent.putExtra("path", path)
+            startActivityForResult(intent, 2222)
+        })
+
+        /*main_ib_crop.setOnClickListener(View.OnClickListener {
             val intent = Intent(this, CropActivity::class.java)
             intent.putExtra("path", path)
             startActivityForResult(intent, 3333)
-        })
+        })*/
 
         main_ib_filter.setOnClickListener(View.OnClickListener {
+            if (main_recycler_filter.isVisible) {
+                main_recycler_filter.startAnimation(bottomDown)
+                bottomDown.setAnimationListener(object: Animation.AnimationListener {
+                    override fun onAnimationRepeat(animation: Animation?) {
+                    }
+
+                    override fun onAnimationEnd(animation: Animation?) {
+                        main_recycler_filter.visibility = View.GONE
+                    }
+
+                    override fun onAnimationStart(animation: Animation?) {
+                    }
+
+                })
+            } else {
+                main_recycler_filter.startAnimation(bottomUp)
+                main_recycler_filter.visibility = View.VISIBLE
+            }
         })
 
         main_tv_complete.setOnClickListener(View.OnClickListener {
@@ -157,20 +203,22 @@ class MainActivity : AppCompatActivity() {
         return cursor.getString(columnIndex)
     }
 
+    /*private fun videoPlay() {
+        simpleExoPlayer.playWhenReady = true
+    }
+
+    private fun videoPause() {
+        simpleExoPlayer.playWhenReady = false
+    }*/
+
     private fun setPlayer(path: String) {
-        dataFactory = DefaultDataSourceFactory(
-            this,
-            Util.getUserAgent(this, getString(R.string.app_name))
-        )
-        renderersFactory = DefaultRenderersFactory(this)
-        trackSelector = DefaultTrackSelector()
-        loadControl = DefaultLoadControl()
-        simpleExoPlayer = ExoPlayerFactory.newSimpleInstance(
-            renderersFactory, trackSelector, loadControl
-        )
+        main_playerview.removeAllViews()
+
         mediaSource =
             ExtractorMediaSource.Factory(dataFactory).createMediaSource(Uri.parse(path))
+        simpleExoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector)
         simpleExoPlayer.repeatMode = Player.REPEAT_MODE_ONE
+
         simpleExoPlayer.playWhenReady = true
         simpleExoPlayer.prepare(mediaSource)
 
@@ -201,6 +249,16 @@ class MainActivity : AppCompatActivity() {
                     return
                 }
             }
+            2222 -> {
+                if (data != null) {
+                    path = data.getStringExtra("path")
+                    Log.d("로그", "result path : $path")
+                    savePath = path!!.substring(0, path!!.length - 4) + "_modify.mp4"
+                    setPlayer(path!!)
+                } else {
+                    return
+                }
+            }
         }
     }
 
@@ -221,5 +279,4 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TestEditor</string>
+    <string name="trim_selected">초 선택됨</string>
+    <string name="progress_dialog_title">변환 중...</string>
+</resources>
