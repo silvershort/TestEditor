@@ -1,7 +1,6 @@
 package com.example.testeditor
 
 import android.Manifest
-import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
@@ -18,12 +17,15 @@ import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.daasuu.gpuv.composer.GPUMp4Composer
 import com.daasuu.gpuv.egl.filter.GlFilter
 import com.daasuu.gpuv.player.GPUPlayerView
 import com.example.testeditor.dialog.CustomProgressDialog
-import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.ExoPlayerFactory
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
@@ -31,12 +33,12 @@ import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_main.main_tv_complete
 import org.jetbrains.anko.toast
 import java.io.File
-import androidx.core.view.isVisible as isVisible
 
 class MainActivity : AppCompatActivity() {
+    
+    private val TAG = "!!!MainActivity!!!"
 
     private val trackSelector: TrackSelector = DefaultTrackSelector()
     private val dataFactory: DefaultDataSourceFactory by lazy {
@@ -48,7 +50,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var simpleExoPlayer: SimpleExoPlayer
     lateinit var mediaSource: MediaSource
-    lateinit var gpuPlayerView: GPUPlayerView
+    val gpuPlayerView: GPUPlayerView by lazy {
+        GPUPlayerView(this)
+    }
 
     lateinit var glFilter: GlFilter
     lateinit var filterName: String
@@ -56,7 +60,7 @@ class MainActivity : AppCompatActivity() {
     private val proDialog: CustomProgressDialog = CustomProgressDialog()
 
     var path: String? = null
-    var fileName: String? = null
+    var fileName: String = FilterType.DEFAULT.name
     var uri: Uri? = null
     var savePath: String? = null
 
@@ -104,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         filterAdapter.setOnFilterListener(object: OnFilterClickListener{
             override fun onFilterClick(holder: FilterAdapter.FilterHolder, position: Int) {
                 filterName = holder.filter_tv.text.toString();
-                Log.d("로그", filterName)
+                Log.d(TAG, filterName)
                 glFilter = FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext)
                 gpuPlayerView.setGlFilter(glFilter)
             }
@@ -114,7 +118,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Intent.ACTION_PICK);
             intent.data = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
             intent.type = "video/*"
-            startActivityForResult(intent, 1111)
+            startActivityForResult(intent, GALLERY_REQUEST_CODE)
         })
 
         /*main_ib_trim.setOnClickListener(View.OnClickListener {
@@ -124,16 +128,20 @@ class MainActivity : AppCompatActivity() {
         })*/
 
         main_ib_new_trim.setOnClickListener(View.OnClickListener {
+            if (path == null) {
+                toast("영상을 선택해주세요")
+                return@OnClickListener
+            }
             val intent = Intent(this, NewTrimmerActivity::class.java)
             intent.putExtra("path", path)
-            startActivityForResult(intent, 2222)
+            startActivityForResult(intent, TRIM_REQUEST_CODE)
         })
 
-        main_ib_crop.setOnClickListener(View.OnClickListener {
+        /*main_ib_crop.setOnClickListener(View.OnClickListener {
             val intent = Intent(this, CropActivity::class.java)
             intent.putExtra("path", path)
             startActivityForResult(intent, 3333)
-        })
+        })*/
 
         main_ib_filter.setOnClickListener(View.OnClickListener {
             if (main_recycler_filter.isVisible) {
@@ -156,9 +164,9 @@ class MainActivity : AppCompatActivity() {
         })
 
         main_tv_complete.setOnClickListener(View.OnClickListener {
-            Log.d("로그", "완료 버튼이 눌림")
-            Log.d("로그", "원본 경로 : $path")
-            Log.d("로그", "저장 경로 : $savePath")
+            Log.d(TAG, "완료 버튼이 눌림")
+            Log.d(TAG, "원본 경로 : $path")
+            Log.d(TAG, "저장 경로 : $savePath")
             proDialog.show(supportFragmentManager, "progressDialog")
             proDialog.setDialogResultInterface(object: CustomProgressDialog.OnDialogResult{
                 override fun finish() {
@@ -168,9 +176,9 @@ class MainActivity : AppCompatActivity() {
 
             val directory = File(Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST")
             if (!directory.exists()) {
-                Log.d("로그", "path: $directory")
-                Log.d("로그", "path: $path")
-                Log.d("로그", "folder create")
+                Log.d(TAG, "path: $directory")
+                Log.d(TAG, "path: $path")
+                Log.d(TAG, "folder create")
                 directory.mkdir()
             }
 
@@ -178,31 +186,30 @@ class MainActivity : AppCompatActivity() {
                 .filter(FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext))
                 .listener(object: GPUMp4Composer.Listener {
                     override fun onFailed(exception: Exception?) {
-                        Log.d("로그", "변환 실패 : ${exception.toString()}")
+                        Log.d(TAG, "변환 실패 : ${exception.toString()}")
                         proDialog.dismiss()
                     }
 
                     override fun onProgress(progress: Double) {
-                        Log.d("로그", "변환 중 : $progress")
+                        Log.d(TAG, "변환 중 : $progress")
                         proDialog.setText(progress)
                     }
 
                     override fun onCanceled() {
-                        Log.d("로그", "변환 취소")
+                        Log.d(TAG, "변환 취소")
                         toast("취소되었습니다")
                     }
 
                     override fun onCompleted() {
                         proDialog.dismiss()
-                        Log.d("로그", "변환 성공")
-                        Log.d("로그", "uri : " + Uri.parse(savePath))
+                        Log.d(TAG, "변환 성공")
+                        Log.d(TAG, "uri : " + Uri.parse(savePath))
 
 //                        contentResolver.update(Uri.parse(savePath), ContentValues(), null, null)
 
                         MediaScannerConnection.scanFile(applicationContext,
                             arrayOf(savePath), null, object: MediaScannerConnection.OnScanCompletedListener{
                                 override fun onScanCompleted(path: String?, uri: Uri?) {
-
                                 }
                             })
                     }
@@ -258,7 +265,6 @@ class MainActivity : AppCompatActivity() {
         simpleExoPlayer.playWhenReady = true
         simpleExoPlayer.prepare(mediaSource)
 
-        gpuPlayerView = GPUPlayerView(this);
         gpuPlayerView.setSimpleExoPlayer(simpleExoPlayer)
         gpuPlayerView.layoutParams = RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         main_playerview.addView(gpuPlayerView)
@@ -269,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         path = rawPath
         if (rawPath != null) {
             fileName = File(path).name
-            Log.d("로그", "파일이름 : $fileName")
+            Log.d(TAG, "파일이름 : $fileName")
             savePath = Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST/modify_" + fileName
         }
     }
@@ -277,7 +283,7 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            1111 -> {
+            GALLERY_REQUEST_CODE -> {
                 // 1번방법
                 if (data != null) {
                     uri = data.data
@@ -287,33 +293,15 @@ class MainActivity : AppCompatActivity() {
                     return
                 }
             }
-            2222 -> {
+            TRIM_REQUEST_CODE -> {
                 if (data != null) {
                     path = data.getStringExtra("path")
-                    Log.d("로그", "result path : $path")
+                    Log.d(TAG, "result path : $path")
                     setFilePath(path)
                     setPlayer(path!!)
                 } else {
                     return
                 }
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int,
-                                            permissions: Array<String>, grantResults: IntArray) {
-        when(requestCode) {
-            GALLERY_REQUEST_CODE -> {
-                if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                }else{
-                }
-                return
-            }
-            TRIM_REQUEST_CODE -> {
-
-            }
-            CROP_REQUEST_CODE -> {
-
             }
         }
     }

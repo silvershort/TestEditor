@@ -6,9 +6,9 @@
     android:layout_height="match_parent"
     tools:context=".CropActivity">
 
-    <com.video.trimmer.view.VideoCropper
+    <!--<com.video.trimmer.view.VideoCropper
         android:id="@+id/crop_cropper"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"/>-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

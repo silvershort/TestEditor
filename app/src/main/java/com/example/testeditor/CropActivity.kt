@@ -1,5 +1,6 @@
 package com.example.testeditor
 
+/*
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -42,3 +43,4 @@ class CropActivity : AppCompatActivity(), OnCropVideoListener {
         TODO("Not yet implemented")
     }
 }
+*/

@@ -40,7 +40,7 @@ allprojects {
 }
 
 dependencies {
-    implementation 'com.github.tizisdeepan:videoeditor:1.0.8'
+
     implementation 'com.github.freddyfang:android-video-trimmer:v1.0.0'
     implementation 'com.github.MasayukiSuda:GPUVideo-android:v0.1.1'
     implementation 'com.github.MasayukiSuda:Mp4Composer-android:v0.3.9'

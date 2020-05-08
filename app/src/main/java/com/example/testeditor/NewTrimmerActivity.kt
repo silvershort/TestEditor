@@ -89,7 +89,6 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
                 }
             })
 
-
             mp4Composer = Mp4Composer(path, "${cacheDir.canonicalPath}/temp.mp4")
                 .trim(sMillis, eMillis)
                 .listener(object: Mp4Composer.Listener{
@@ -99,13 +98,11 @@ class NewTrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRange
                     }
 
                     override fun onProgress(progress: Double) {
-                        Log.d("로그", "변환 중 : $progress")
                         proDialog.setText(progress)
                     }
 
                     override fun onCanceled() {
                         Log.d("로그", "변환 취소")
-                        toast("취소되었습니다")
                     }
 
                     override fun onCompleted() {

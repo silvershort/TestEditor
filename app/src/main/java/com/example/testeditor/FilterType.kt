@@ -45,7 +45,7 @@ enum class FilterType {
     VIGNETTE,
     WATERMARK,
     WEAK_PIXEL,
-    WHITE_BALANCE,
+//    WHITE_BALANCE,
     ZOOM_BLUR;
 
     companion object {
@@ -133,12 +133,12 @@ enum class FilterType {
                     ), GlWatermarkFilter.Position.RIGHT_BOTTOM
                 );
                 WEAK_PIXEL -> GlWeakPixelInclusionFilter();
-                WHITE_BALANCE -> {
+/*                WHITE_BALANCE -> {
                     val glWhiteBalanceFilter = GlWhiteBalanceFilter();
                     glWhiteBalanceFilter.setTemperature(2400f);
                     glWhiteBalanceFilter.setTint(2f);
                     return glWhiteBalanceFilter;
-                }
+                }*/
                 ZOOM_BLUR -> GlZoomBlurFilter();
                 else -> return GlFilter()
             }

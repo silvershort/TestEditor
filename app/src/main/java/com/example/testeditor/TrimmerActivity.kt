@@ -1,5 +1,6 @@
 package com.example.testeditor
 
+/*
 import android.content.Context
 import android.graphics.Typeface
 import android.net.Uri
@@ -55,3 +56,4 @@ class TrimmerActivity : AppCompatActivity(), OnTrimVideoListener {
         Log.d("로그", "저장 시작")
     }
 }
+*/
