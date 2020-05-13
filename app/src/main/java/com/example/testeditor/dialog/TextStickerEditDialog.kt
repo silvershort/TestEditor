@@ -6,22 +6,29 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import com.example.testeditor.R
-import com.white.progressview.HorizontalProgressView
 
-class CustomProgressDialog : DialogFragment() {
+class TextStickerEditDialog : DialogFragment() {
 
-    private val TAG = "!!!CustomProgressDialog!!!"
+    private val TAG = "!!!TextStickerEditDialog!!!"
 
-    private lateinit var progress: HorizontalProgressView
     private lateinit var dialogResult: OnDialogResult
+    private lateinit var inputText: EditText
+    private lateinit var negativeButton: Button
+    private lateinit var positiveButton: Button
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.custom_progress_dialog, container)
+        val view = inflater.inflate(R.layout.text_sticker_edit_dialog, container)
         dialog?.setCanceledOnTouchOutside(false)
-        progress = view.findViewById(R.id.progress_pro_view)
+
+        inputText = view.findViewById(R.id.textsticker_et_inputtext)
+        negativeButton = view.findViewById(R.id.textsticker_btn_negative)
+        positiveButton = view.findViewById(R.id.textsticker_btn_positive)
+
         return view
     }
 
@@ -35,14 +42,6 @@ class CustomProgressDialog : DialogFragment() {
                 dismiss()
             }
         }
-    }
-
-    fun setText(percent: Double) {
-        progress.setProgress((percent * 100).toInt(), true)
-    }
-
-    fun setDialogResultInterface(dialogResult: OnDialogResult) {
-        this.dialogResult = dialogResult
     }
 
     interface OnDialogResult {

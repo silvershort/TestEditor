@@ -2,4 +2,8 @@
     <string name="app_name">TestEditor</string>
     <string name="trim_selected">seconds selected</string>
     <string name="progress_dialog_title">Converting...</string>
+    <string name="conversion_cancel">Cancel conversion</string>
+    <string name="conversion_complete">Conversion complete</string>
+    <string name="conversion_save">on saved</string>
+    <string name="conversion_failed">Conversion failed</string>
 </resources>

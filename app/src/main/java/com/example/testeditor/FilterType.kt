@@ -1,6 +1,7 @@
 package com.example.testeditor
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import com.daasuu.gpuv.egl.filter.*
@@ -53,7 +54,8 @@ enum class FilterType {
             return FilterType.values()
         }
 
-        fun createGlFilter(filterType: FilterType, context: Context): GlFilter {
+        fun createGlFilter(filterType: FilterType, context: Context, overlayImage: Bitmap?): GlFilter {
+            Log.d("!!!", overlayImage.toString())
             when (filterType) {
                 DEFAULT -> return GlFilter();
                 BILATERAL_BLUR -> return GlBilateralFilter();
@@ -93,6 +95,11 @@ enum class FilterType {
                 LUMINANCE_THRESHOLD -> return GlLuminanceThresholdFilter();
                 MONOCHROME -> return GlMonochromeFilter();
                 OPACITY -> return GlOpacityFilter();
+/*                OVERLAY -> {
+                    Log.d("!!!", "OVERLAY 선택됨")
+//                    return GlBitmapOverlaySampleFilter(overlayImage!!)
+                    return GlBitmapOverlaySampleFilter(BitmapFactory.decodeResource(context.resources, R.drawable.test_sticker))
+                }*/
                 PIXELATION -> return GlPixelationFilter();
                 POSTERIZE -> return GlPosterizeFilter();
                 RGB -> {
@@ -127,10 +134,7 @@ enum class FilterType {
                 }
                 VIGNETTE -> GlVignetteFilter();
                 WATERMARK -> GlWatermarkFilter(
-                    BitmapFactory.decodeResource(
-                        context.getResources(),
-                        R.mipmap.ic_launcher_round
-                    ), GlWatermarkFilter.Position.RIGHT_BOTTOM
+                    BitmapFactory.decodeResource(context.resources, R.drawable.test_sticker), GlWatermarkFilter.Position.LEFT_BOTTOM
                 );
                 WEAK_PIXEL -> GlWeakPixelInclusionFilter();
 /*                WHITE_BALANCE -> {

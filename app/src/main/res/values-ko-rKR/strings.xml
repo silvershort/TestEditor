@@ -3,4 +3,8 @@
     <string name="app_name">TestEditor</string>
     <string name="trim_selected">초 선택됨</string>
     <string name="progress_dialog_title">변환 중...</string>
+    <string name="conversion_cancel">변환 취소</string>
+    <string name="conversion_complete">변환 완료</string>
+    <string name="conversion_save">저장 완료</string>
+    <string name="conversion_failed">변환 실패</string>
 </resources>

@@ -23,8 +23,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = kotlin_version
-        targetCompatibility = kotlin_version
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
@@ -40,13 +40,14 @@ allprojects {
 }
 
 dependencies {
-
     implementation 'com.github.freddyfang:android-video-trimmer:v1.0.0'
     implementation 'com.github.MasayukiSuda:GPUVideo-android:v0.1.1'
     implementation 'com.github.MasayukiSuda:Mp4Composer-android:v0.3.9'
     implementation 'com.google.android.exoplayer:exoplayer-core:2.8.4'
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.8.4'
     implementation 'com.white:progressview:1.0.1'
+    implementation 'com.arthenica:mobile-ffmpeg-full-gpl:4.3.2'
+
     implementation 'org.jetbrains.anko:anko-sqlite:0.10.2'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])

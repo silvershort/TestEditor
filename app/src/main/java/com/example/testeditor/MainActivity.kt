@@ -3,6 +3,7 @@ package com.example.testeditor
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
@@ -19,10 +20,15 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.arthenica.mobileffmpeg.*
+import com.arthenica.mobileffmpeg.util.SingleExecuteCallback
+import com.daasuu.gpuv.composer.FillMode
 import com.daasuu.gpuv.composer.GPUMp4Composer
 import com.daasuu.gpuv.egl.filter.GlFilter
 import com.daasuu.gpuv.player.GPUPlayerView
 import com.example.testeditor.dialog.CustomProgressDialog
+import com.example.testeditor.sticker.StickerImageView
+import com.example.testeditor.sticker.StickerTextView
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -35,6 +41,8 @@ import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.toast
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
     
@@ -59,10 +67,17 @@ class MainActivity : AppCompatActivity() {
     lateinit var gpuMp4Composer: GPUMp4Composer
     private val proDialog: CustomProgressDialog = CustomProgressDialog()
 
+    var stickerIvList = mutableListOf<StickerImageView>()
+    var overlayImage: Bitmap? = null
     var path: String? = null
+    var imgPath: String? = null
     var fileName: String = FilterType.DEFAULT.name
     var uri: Uri? = null
     var savePath: String? = null
+
+    var duration: Long = 0
+    var videoWidth: Int = 0
+    var videoHeight: Int = 0
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -105,11 +120,21 @@ class MainActivity : AppCompatActivity() {
         main_recycler_filter.adapter = filterAdapter
         main_recycler_filter.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
+        Config.enableStatisticsCallback(StatisticsCallback {
+            val progress = (it.time / duration.toDouble()) * 100
+            Log.d(TAG, String.format("frame: ${it.videoFrameNumber} time: ${it.time}"))
+            Log.d(TAG, String.format("progress: $progress"))
+        })
+
+        Config.enableLogCallback(LogCallback {
+            Log.d("!!!config", it.text)
+        })
+
         filterAdapter.setOnFilterListener(object: OnFilterClickListener{
             override fun onFilterClick(holder: FilterAdapter.FilterHolder, position: Int) {
                 filterName = holder.filter_tv.text.toString();
                 Log.d(TAG, filterName)
-                glFilter = FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext)
+                glFilter = FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext, overlayImage)
                 gpuPlayerView.setGlFilter(glFilter)
             }
         })
@@ -132,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 toast("영상을 선택해주세요")
                 return@OnClickListener
             }
-            val intent = Intent(this, NewTrimmerActivity::class.java)
+            val intent = Intent(this, TrimmerActivity::class.java)
             intent.putExtra("path", path)
             startActivityForResult(intent, TRIM_REQUEST_CODE)
         })
@@ -163,6 +188,71 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        main_ib_sticker.setOnClickListener(View.OnClickListener {
+            val ivSticker: StickerImageView = StickerImageView(applicationContext)
+            ivSticker.setImageDrawable(getDrawable(R.drawable.test_sticker))
+            stickerIvList.add(ivSticker)
+            main_layout_sticker.addView(ivSticker);
+        })
+
+        main_ib_text.setOnClickListener(View.OnClickListener {
+            val textSticker: StickerTextView = StickerTextView(applicationContext)
+            textSticker.setOnClickListener(View.OnClickListener {
+                Log.d(TAG, "텍스트 스티커가 선택되었습니다")
+            })
+            textSticker.text = "테스트메시지"
+            main_layout_sticker.addView(textSticker)
+        })
+
+        main_ib_clear.setOnClickListener(View.OnClickListener {
+            val cmd = "-i $path  -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0' -y $savePath"
+            Log.d(TAG, "cmd : $cmd")
+            FFmpeg.execute(cmd)
+        })
+
+        main_ib_combine.setOnClickListener(View.OnClickListener {
+            main_layout_sticker.isDrawingCacheEnabled = true
+            main_layout_sticker.buildDrawingCache()
+
+            val imgWidth = main_layout_sticker.width
+            val imgHeight = main_layout_sticker.height
+            Log.d(TAG, "img_width : $imgWidth")
+            Log.d(TAG, "img_height : $imgHeight")
+
+            overlayImage = Bitmap.createScaledBitmap(main_layout_sticker.drawingCache,
+                    videoWidth, (main_layout_sticker.height / (main_layout_sticker.width / videoWidth.toDouble())).toInt(), true)
+            Log.d(TAG, overlayImage.toString())
+            val storage = File(
+                Environment.getExternalStorageDirectory()
+                    .absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST"
+            )
+            val fileName = "temp.png"
+            val tempFile = File(storage, fileName)
+            imgPath = tempFile.absolutePath
+
+            try {
+                Log.d("로그", "변환 : " + tempFile.absolutePath)
+                tempFile.createNewFile()
+                val out = FileOutputStream(tempFile)
+                overlayImage!!.compress(Bitmap.CompressFormat.PNG, 90, out)
+                out.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        })
+
+        main_layout_main.setOnClickListener(View.OnClickListener {
+            for (x in stickerIvList) {
+                x.setControlItemsHidden(true)
+            }
+        })
+
+        main_layout_sticker.setOnClickListener(View.OnClickListener {
+            for (x in stickerIvList) {
+                x.setControlItemsHidden(true)
+            }
+        })
+
         main_tv_complete.setOnClickListener(View.OnClickListener {
             Log.d(TAG, "완료 버튼이 눌림")
             Log.d(TAG, "원본 경로 : $path")
@@ -183,7 +273,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             gpuMp4Composer = GPUMp4Composer(path, savePath)
-                .filter(FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext))
+                .filter(FilterType.createGlFilter(FilterType.valueOf(filterName), applicationContext, overlayImage))
+                .fillMode(FillMode.PRESERVE_ASPECT_FIT)
                 .listener(object: GPUMp4Composer.Listener {
                     override fun onFailed(exception: Exception?) {
                         Log.d(TAG, "변환 실패 : ${exception.toString()}")
@@ -197,7 +288,6 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onCanceled() {
                         Log.d(TAG, "변환 취소")
-                        toast("취소되었습니다")
                     }
 
                     override fun onCompleted() {
@@ -269,6 +359,14 @@ class MainActivity : AppCompatActivity() {
         gpuPlayerView.layoutParams = RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         main_playerview.addView(gpuPlayerView)
         gpuPlayerView.onResume()
+
+        val info = FFprobe.getMediaInformation(path)
+        duration = info.duration
+        val streamInfo = info.streams
+        videoWidth = streamInfo[0].width.toInt()
+        videoHeight = streamInfo[0].height.toInt()
+        Log.d(TAG, "width : $videoWidth")
+        Log.d(TAG, "height : $videoHeight")
     }
 
     private fun setFilePath(rawPath: String?) {
