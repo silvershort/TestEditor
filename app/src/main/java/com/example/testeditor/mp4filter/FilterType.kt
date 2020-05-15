@@ -1,10 +1,11 @@
-package com.example.testeditor
+package com.example.testeditor.mp4filter
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import com.daasuu.gpuv.egl.filter.*
+import com.example.testeditor.R
 import java.io.IOException
 
 enum class FilterType {
@@ -98,7 +99,7 @@ enum class FilterType {
 /*                OVERLAY -> {
                     Log.d("!!!", "OVERLAY 선택됨")
 //                    return GlBitmapOverlaySampleFilter(overlayImage!!)
-                    return GlBitmapOverlaySampleFilter(BitmapFactory.decodeResource(context.resources, R.drawable.test_sticker))
+                    return GlBitmapOverlaySampleFilter(BitmapFactory.decodeResource(context.resources, R.drawable.test_sticker1))
                 }*/
                 PIXELATION -> return GlPixelationFilter();
                 POSTERIZE -> return GlPosterizeFilter();
@@ -134,7 +135,9 @@ enum class FilterType {
                 }
                 VIGNETTE -> GlVignetteFilter();
                 WATERMARK -> GlWatermarkFilter(
-                    BitmapFactory.decodeResource(context.resources, R.drawable.test_sticker), GlWatermarkFilter.Position.LEFT_BOTTOM
+                    BitmapFactory.decodeResource(context.resources,
+                        R.drawable.test_sticker1
+                    ), GlWatermarkFilter.Position.LEFT_BOTTOM
                 );
                 WEAK_PIXEL -> GlWeakPixelInclusionFilter();
 /*                WHITE_BALANCE -> {

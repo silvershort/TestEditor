@@ -6,4 +6,5 @@
     <string name="conversion_complete">Conversion complete</string>
     <string name="conversion_save">on saved</string>
     <string name="conversion_failed">Conversion failed</string>
+    <string name="progress_dialog_title_filter">Filter being applied</string>
 </resources>

@@ -48,7 +48,7 @@ class TrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCha
     private var sMillis: Long = 0
     private var eMillis: Long = 0
 
-    private val proDialog: CustomProgressDialog = CustomProgressDialog()
+    private val proDialog: CustomProgressDialog by lazy { CustomProgressDialog() }
     private lateinit var mp4Composer: Mp4Composer
 
     override fun onResume() {
@@ -97,6 +97,7 @@ class TrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCha
                 .listener(object: Mp4Composer.Listener{
                     override fun onFailed(exception: Exception?) {
                         Log.d(TAG, "변환 실패")
+                        runOnUiThread { toast(getString(R.string.conversion_failed)) }
                         proDialog.dismiss()
                     }
 
@@ -106,11 +107,13 @@ class TrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCha
 
                     override fun onCanceled() {
                         Log.d(TAG, "변환 취소")
+                        runOnUiThread { toast(getString(R.string.conversion_cancel)) }
                     }
 
                     override fun onCompleted() {
                         proDialog.dismiss()
                         Log.d(TAG, "변환 완료")
+                        runOnUiThread { toast(getString(R.string.conversion_complete)) }
                         releaseVideo()
                         val intent = Intent()
                         intent.putExtra("path", "${cacheDir.canonicalPath}/temp.mp4")

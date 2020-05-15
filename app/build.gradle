@@ -48,6 +48,9 @@ dependencies {
     implementation 'com.white:progressview:1.0.1'
     implementation 'com.arthenica:mobile-ffmpeg-full-gpl:4.3.2'
 
+    implementation 'com.squareup.retrofit2:retrofit:2.7.1'
+    implementation 'com.squareup.retrofit2:converter-gson:2.7.1'
+
     implementation 'org.jetbrains.anko:anko-sqlite:0.10.2'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])

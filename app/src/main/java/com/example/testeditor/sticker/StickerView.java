@@ -22,10 +22,15 @@ import com.example.testeditor.R;
 public abstract class StickerView extends FrameLayout{
 
     public static final String TAG = "com.knef.stickerView";
+
+    private static final int IMAGE_TYPE = 0;
+    private static final int TEXT_TYPE = 1;
+
     private BorderView iv_border;
     private ImageView iv_scale;
     private ImageView iv_delete;
     private ImageView iv_flip;
+    private ImageView iv_edit;
 
     // For scalling
     private float this_orgX = -1, this_orgY = -1;
@@ -41,20 +46,23 @@ public abstract class StickerView extends FrameLayout{
     private final static int BUTTON_SIZE_DP = 30;
     private final static int SELF_SIZE_DP = 100;
 
+    private int viewType;
 
-
-    public StickerView(Context context) {
+    public StickerView(Context context, int viewType) {
         super(context);
+        this.viewType = viewType;
         init(context);
     }
 
-    public StickerView(Context context, AttributeSet attrs) {
+    public StickerView(Context context, AttributeSet attrs, int viewType) {
         super(context, attrs);
+        this.viewType = viewType;
         init(context);
     }
 
-    public StickerView(Context context, AttributeSet attrs, int defStyle) {
+    public StickerView(Context context, AttributeSet attrs, int defStyle,  int viewType) {
         super(context, attrs, defStyle);
+        this.viewType = viewType;
         init(context);
     }
 
@@ -63,16 +71,19 @@ public abstract class StickerView extends FrameLayout{
         this.iv_scale = new ImageView(context);
         this.iv_delete = new ImageView(context);
         this.iv_flip = new ImageView(context);
+        this.iv_edit = new ImageView(context);
 
         this.iv_scale.setImageResource(R.drawable.zoominout);
         this.iv_delete.setImageResource(R.drawable.remove);
         this.iv_flip.setImageResource(R.drawable.flip);
+        this.iv_edit.setImageResource(R.drawable.edit);
 
         this.setTag("DraggableViewGroup");
         this.iv_border.setTag("iv_border");
         this.iv_scale.setTag("iv_scale");
         this.iv_delete.setTag("iv_delete");
         this.iv_flip.setTag("iv_flip");
+        this.iv_edit.setTag("iv_edit");
 
         int margin = convertDpToPixel(BUTTON_SIZE_DP, getContext())/2;
         int size = convertDpToPixel(SELF_SIZE_DP, getContext());
@@ -119,16 +130,24 @@ public abstract class StickerView extends FrameLayout{
                 );
         iv_flip_params.gravity = Gravity.TOP | Gravity.LEFT;
 
+        LayoutParams iv_edit_params =
+                new LayoutParams(
+                        convertDpToPixel(BUTTON_SIZE_DP, getContext()),
+                        convertDpToPixel(BUTTON_SIZE_DP, getContext())
+                );
+        iv_edit_params.gravity = Gravity.BOTTOM | Gravity.LEFT;
+
         this.setLayoutParams(this_params);
         this.addView(getMainView(), iv_main_params);
         this.addView(iv_border, iv_border_params);
         this.addView(iv_scale, iv_scale_params);
         this.addView(iv_delete, iv_delete_params);
         this.addView(iv_flip, iv_flip_params);
+        if (viewType == TEXT_TYPE) {
+            this.addView(iv_edit, iv_edit_params);
+        }
+
         this.setOnTouchListener(mTouchListener);
-        this.setOnClickListener(v -> {
-            Log.d(TAG, "클릭되었습니다");
-        });
         this.iv_scale.setOnTouchListener(mTouchListener);
         this.iv_delete.setOnClickListener(new OnClickListener() {
             @Override
@@ -151,6 +170,14 @@ public abstract class StickerView extends FrameLayout{
                 requestLayout();
             }
         });
+        this.iv_edit.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (viewType == TEXT_TYPE) {
+                    onClickEdit();
+                }
+            }
+        });
     }
 
     public boolean isFlip(){
@@ -158,6 +185,8 @@ public abstract class StickerView extends FrameLayout{
     }
 
     protected abstract View getMainView();
+
+    protected abstract void onClickEdit();
 
     private OnTouchListener mTouchListener = new OnTouchListener() {
         @Override
@@ -316,12 +345,22 @@ public abstract class StickerView extends FrameLayout{
             iv_border.setVisibility(View.INVISIBLE);
             iv_scale.setVisibility(View.INVISIBLE);
             iv_delete.setVisibility(View.INVISIBLE);
-            iv_flip.setVisibility(View.INVISIBLE);
+
+            if (viewType == TEXT_TYPE) {
+                iv_edit.setVisibility(View.INVISIBLE);
+            } else {
+                iv_flip.setVisibility(View.INVISIBLE);
+            }
         }else{
             iv_border.setVisibility(View.VISIBLE);
             iv_scale.setVisibility(View.VISIBLE);
             iv_delete.setVisibility(View.VISIBLE);
-            iv_flip.setVisibility(View.VISIBLE);
+
+            if (viewType == TEXT_TYPE) {
+                iv_edit.setVisibility(View.VISIBLE);
+            } else {
+                iv_flip.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -380,13 +419,23 @@ public abstract class StickerView extends FrameLayout{
         if(!isVisible) {
             iv_border.setVisibility(View.GONE);
             iv_delete.setVisibility(View.GONE);
-            iv_flip.setVisibility(View.GONE);
             iv_scale.setVisibility(View.GONE);
+
+            if (viewType == TEXT_TYPE) {
+                iv_edit.setVisibility(View.GONE);
+            } else {
+                iv_flip.setVisibility(View.GONE);
+            }
         }else{
             iv_border.setVisibility(View.VISIBLE);
             iv_delete.setVisibility(View.VISIBLE);
-            iv_flip.setVisibility(View.VISIBLE);
             iv_scale.setVisibility(View.VISIBLE);
+
+            if (viewType == TEXT_TYPE) {
+                iv_edit.setVisibility(View.VISIBLE);
+            } else {
+                iv_flip.setVisibility(View.VISIBLE);
+            }
         }
 
     }

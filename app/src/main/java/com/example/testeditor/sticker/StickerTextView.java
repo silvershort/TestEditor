@@ -10,22 +10,35 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.testeditor.MainActivity;
+import com.example.testeditor.dialog.TextStickerEditDialog;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by cheungchingai on 6/15/15.
  */
 public class StickerTextView extends StickerView{
+
     private AutoResizeTextView tv_main;
+    private TextStickerEditDialog textStickerEditDialog;
+    private Context context;
+
     public StickerTextView(Context context) {
-        super(context);
+        super(context, 1);
+        this.context = context;
     }
 
     public StickerTextView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        super(context, attrs, 1);
+        this.context = context;
     }
 
     public StickerTextView(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
+        super(context, attrs, defStyle, 1);
+        this.context = context;
     }
 
     @Override
@@ -49,6 +62,18 @@ public class StickerTextView extends StickerView{
         if(getImageViewFlip()!=null)
             getImageViewFlip().setVisibility(View.GONE);
         return tv_main;
+    }
+
+    @Override
+    protected void onClickEdit() {
+        textStickerEditDialog = new TextStickerEditDialog();
+        textStickerEditDialog.show(((MainActivity)context).getSupportFragmentManager(), "textEditDialog");
+        textStickerEditDialog.setDialogResultInterface(new TextStickerEditDialog.OnDialogResult() {
+            @Override
+            public void finish(@NotNull String text) {
+                setText(text);
+            }
+        });
     }
 
     public void setText(String text){

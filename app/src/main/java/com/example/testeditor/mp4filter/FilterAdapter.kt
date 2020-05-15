@@ -1,4 +1,4 @@
-package com.example.testeditor
+package com.example.testeditor.mp4filter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,8 +6,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.testeditor.OnFilterClickListener
+import com.example.testeditor.R
 
-class FilterAdapter (val items : Array<FilterType>) : RecyclerView.Adapter<FilterAdapter.FilterHolder>(), OnFilterClickListener {
+class FilterAdapter (val items : Array<FilterType>) : RecyclerView.Adapter<FilterAdapter.FilterHolder>(),
+    OnFilterClickListener {
 
     lateinit var listener: OnFilterClickListener
 
@@ -35,7 +38,10 @@ class FilterAdapter (val items : Array<FilterType>) : RecyclerView.Adapter<Filte
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FilterHolder {
         val layoutInflater: LayoutInflater = LayoutInflater.from(parent.context)
         val view: View = layoutInflater.inflate(R.layout.filter_item, parent, false)
-        return FilterHolder(view, this)
+        return FilterHolder(
+            view,
+            this
+        )
     }
 
     override fun getItemCount() = items.size

@@ -14,15 +14,15 @@ public class StickerImageView extends StickerView {
     private String owner_id;
     private ImageView iv_main;
     public StickerImageView(Context context) {
-        super(context);
+        super(context, 0);
     }
 
     public StickerImageView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        super(context, attrs, 0);
     }
 
     public StickerImageView(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
+        super(context, attrs, defStyle, 0);
     }
 
     public void setOwnerId(String owner_id){
@@ -37,10 +37,17 @@ public class StickerImageView extends StickerView {
     public View getMainView() {
         if(this.iv_main == null) {
             this.iv_main = new ImageView(getContext());
+            this.iv_main.setAdjustViewBounds(true);
             this.iv_main.setScaleType(ImageView.ScaleType.FIT_XY);
         }
         return iv_main;
     }
+
+    @Override
+    protected void onClickEdit() {
+
+    }
+
     public void setImageBitmap(Bitmap bmp){
         this.iv_main.setImageBitmap(bmp);
     }
