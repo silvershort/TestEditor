@@ -6,7 +6,7 @@
 
     <TextView
         android:id="@+id/audio_tv_title"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"

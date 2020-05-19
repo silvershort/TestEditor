@@ -16,6 +16,7 @@ import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -26,27 +27,29 @@ import com.daasuu.gpuv.composer.FillMode
 import com.daasuu.gpuv.composer.GPUMp4Composer
 import com.daasuu.gpuv.egl.filter.GlFilter
 import com.daasuu.gpuv.player.GPUPlayerView
-import com.example.testeditor.dialog.AudioSelectDialog
 import com.example.testeditor.dialog.CustomProgressDialog
 import com.example.testeditor.dialog.TextStickerEditDialog
 import com.example.testeditor.mp4filter.FilterAdapter
 import com.example.testeditor.mp4filter.FilterType
+import com.example.testeditor.sound.SoundActivity
 import com.example.testeditor.sticker.StickerImageView
 import com.example.testeditor.sticker.StickerTextView
-import com.google.android.exoplayer2.ExoPlayerFactory
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.*
 import org.jetbrains.anko.toast
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.lang.Runnable
 
 class MainActivity : AppCompatActivity() {
 
@@ -63,6 +66,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var simpleExoPlayer: SimpleExoPlayer
     lateinit var mediaSource: MediaSource
 
+//    private lateinit var soundExoPlayer: SimpleExoPlayer
+//    lateinit var soundMediaSource: MediaSource
+
     //    뷰 및 필터 변수
     val gpuPlayerView: GPUPlayerView by lazy {
         GPUPlayerView(this)
@@ -71,7 +77,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var filterName: String
     lateinit var gpuMp4Composer: GPUMp4Composer
 
-    //   프로그래스 다이얼로그
+    // 프로그래스 다이얼로그
     lateinit var proDialog: CustomProgressDialog
 
     // 스티커 변수
@@ -88,10 +94,10 @@ class MainActivity : AppCompatActivity() {
         R.drawable.test_sticker8
     )
     val textStickerEditDialog: TextStickerEditDialog = TextStickerEditDialog()
-    val audioSelectDialog = AudioSelectDialog()
 
     // 파일 변환을 위한 변수
     var overlayImage: Bitmap? = null
+    var rootPath: String? = null
     var path: String? = null
     var imgPath: String? = null
     var fileName: String = FilterType.DEFAULT.name
@@ -107,11 +113,16 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
 
+    // 사운드 관련 변수
+    lateinit var main_tv_sound: TextView
+    var soundPath: String? = null
+
     val bottomUp: Animation by lazy { AnimationUtils.loadAnimation(this, R.anim.bottom_up) }
     val bottomDown: Animation by lazy { AnimationUtils.loadAnimation(this, R.anim.bottom_down) }
 
     private val GALLERY_REQUEST_CODE = 1000
     private val TRIM_REQUEST_CODE = 1001
+    private val SOUND_REQUEST_CODE = 1002
 
     override fun onResume() {
         // 다시 메인 화면으로 돌아왔을때 영상을 재생시켜준다
@@ -127,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         try {
             simpleExoPlayer.playWhenReady = false
+//            soundExoPlayer.playWhenReady = false
         } catch (e: Exception) {
         }
     }
@@ -139,6 +151,12 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(main_toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
+
+        // 사운드 텍스트에 흐르는 글자 효과 적용
+        main_tv_sound = findViewById(R.id.main_tv_sound)
+        main_tv_sound.isSingleLine = true
+        main_tv_sound.ellipsize = TextUtils.TruncateAt.MARQUEE
+        main_tv_sound.isSelected = true
 
         filterName = FilterType.DEFAULT.name
 
@@ -268,12 +286,11 @@ class MainActivity : AppCompatActivity() {
         })
 
         main_ib_audio.setOnClickListener(View.OnClickListener {
-            audioSelectDialog.show(supportFragmentManager, "audioDialog")
-            audioSelectDialog.setDialogResultInterface(object : AudioSelectDialog.OnDialogResult {
-                override fun select(path: String) {
-
-                }
-            })
+            val intent = Intent(this, SoundActivity::class.java)
+            if (!soundPath.isNullOrEmpty()) {
+                intent.putExtra("path", soundPath)
+            }
+            startActivityForResult(intent, SOUND_REQUEST_CODE)
         })
 
         main_tv_complete.setOnClickListener(View.OnClickListener {
@@ -314,7 +331,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        gpuMp4Composer = GPUMp4Composer(path, "${cacheDir.canonicalPath}/temp_filter.mp4")
+        gpuMp4Composer = GPUMp4Composer(path, "${cacheDir.canonicalPath}/temp.mp4")
             .filter(
                 FilterType.createGlFilter(
                     FilterType.valueOf(filterName), applicationContext, overlayImage
@@ -373,13 +390,13 @@ class MainActivity : AppCompatActivity() {
             combineSticker()
         }
 
-
         val cmd = when (type) {
             // 흑백 효과
             1 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, hue=s=0' -y $savePath"
 
 //            2-> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, boxblur=luma_radius=2:luma_power=1' -y $savePath"
-            2-> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, chromakey=green' -y $savePath"
+//            2-> "-i $path -i $imgPath -i $soundPath -shortest -c:a aac -strict experimental -filter_complex '[0:v][1:v]overlay=0:0' -y $savePath"
+            2-> "-i $path -i $soundPath -c:v copy -c:a aac -shortest -strict experimental -map 0:v:0 -map 1:a:0 -y $savePath"
             // 세피아 효과
             3 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131' -y $savePath"
             else -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0' -y $savePath"
@@ -406,6 +423,15 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        proDialog = CustomProgressDialog(getString(R.string.progress_dialog_title))
+        proDialog.show(supportFragmentManager, "proDialog")
+        proDialog.setDialogResultInterface(object : CustomProgressDialog.OnDialogResult {
+            override fun finish() {
+                FFmpeg.cancel()
+                runOnUiThread { toast(getString(R.string.conversion_cancel)) }
+            }
+        })
+
         // FFmpeg 프로그래스
         Config.enableStatisticsCallback(StatisticsCallback {
             val progress = (it.time / duration.toDouble())
@@ -414,6 +440,34 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "rc : ${Config.getLastReturnCode()} suc: ${Config.RETURN_CODE_SUCCESS}")
             proDialog.setText(progress)
         })
+    }
+
+    private fun soundCombine() {
+        val soundInfo = FFprobe.getMediaInformation(soundPath)
+
+        Log.d(TAG, "사운드 길이 : ${soundInfo.duration} 영상 길이 : ${duration}")
+
+        val cmd = if (soundInfo.duration > duration) {
+            "-i '$rootPath' -i ${cacheDir.canonicalPath}/temp_merge.mp3 -map 0:v -map 1:a -c copy -shortest -y \"${cacheDir.canonicalPath}/temp.mp4\""
+        } else {
+            "-i '$rootPath' -i ${cacheDir.canonicalPath}/temp_merge.mp3 -map 0:v -map 1:a -c copy -y \"${cacheDir.canonicalPath}/temp.mp4\""
+        }
+
+        Log.d (TAG, "cmd : $cmd")
+        Thread(Runnable {
+            FFmpeg.execute("-i '$rootPath' -y ${cacheDir.canonicalPath}/temp.mp3")
+            FFmpeg.execute("-i ${cacheDir.canonicalPath}/temp.mp3 -i $soundPath -filter_complex amerge -c:a libmp3lame -q:a 4 -y ${cacheDir.canonicalPath}/temp_merge.mp3")
+            val rc = FFmpeg.execute(cmd)
+
+            if (rc == Config.RETURN_CODE_SUCCESS) {
+                Log.d(TAG, "변환 완료")
+                scanSaveFile()
+                setFilePath("${cacheDir.canonicalPath}/temp.mp4")
+                runOnUiThread { setPlayer(path!!) }
+            } else {
+                runOnUiThread { toast(getString(R.string.conversion_failed)) }
+            }
+        }).start()
     }
 
     private fun combineSticker() {
@@ -483,9 +537,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getRealPathFromURI(contentUri: Uri): String? {
         var columnIndex = 0
-        val proj = arrayOf(
-            MediaStore.Images.Media.DATA
-        )
+        val proj = arrayOf(MediaStore.Images.Media.DATA)
         val cursor =
             contentResolver.query(contentUri, proj, null, null, null)
         if (cursor!!.moveToFirst()) {
@@ -493,14 +545,6 @@ class MainActivity : AppCompatActivity() {
         }
         return cursor.getString(columnIndex)
     }
-
-    /*private fun videoPlay() {
-        simpleExoPlayer.playWhenReady = true
-    }
-
-    private fun videoPause() {
-        simpleExoPlayer.playWhenReady = false
-    }*/
 
     private fun setPlayer(path: String) {
         main_playerview.removeAllViews()
@@ -528,12 +572,47 @@ class MainActivity : AppCompatActivity() {
         videoHeight = streamInfo[0].height.toInt()
         Log.d(TAG, "width : $videoWidth")
         Log.d(TAG, "height : $videoHeight")
+
+        simpleExoPlayer.addListener(object : Player.EventListener {
+            override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
+            }
+
+            override fun onSeekProcessed() {
+            }
+
+            override fun onTracksChanged(
+                trackGroups: TrackGroupArray?,
+                trackSelections: TrackSelectionArray?
+            ) {
+            }
+
+            override fun onPlayerError(error: ExoPlaybackException?) {
+            }
+
+            override fun onLoadingChanged(isLoading: Boolean) {
+            }
+
+            override fun onPositionDiscontinuity(reason: Int) {
+            }
+
+            override fun onRepeatModeChanged(repeatMode: Int) {
+            }
+
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            }
+
+            override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
+            }
+
+            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            }
+        })
     }
 
     private fun setFilePath(rawPath: String?) {
         path = rawPath
         if (rawPath != null) {
-            fileName = File(path).name
+            fileName = File(rootPath).name
             Log.d(TAG, "파일이름 : $fileName")
             savePath =
                 Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST/modify_" + fileName
@@ -548,6 +627,7 @@ class MainActivity : AppCompatActivity() {
                 // 1번방법
                 if (data != null) {
                     uri = data.data
+                    rootPath = getRealPathFromURI(uri!!)
                     setFilePath(getRealPathFromURI(uri!!))
                     setPlayer(path!!)
                 } else {
@@ -561,6 +641,25 @@ class MainActivity : AppCompatActivity() {
                     Log.d(TAG, "result path : $path")
                     setFilePath(path)
                     setPlayer(path!!)
+                } else {
+                    return
+                }
+            }
+            // 사운드를 가져 왔을때
+            SOUND_REQUEST_CODE -> {
+                if (data != null) {
+                    val soundTitle = data.getStringExtra("title")
+
+                    if (soundTitle == "empty") {
+                        setFilePath(rootPath)
+                        setPlayer(rootPath!!)
+                        soundPath = null
+                    } else {
+                        main_tv_sound.text = soundTitle
+                        soundPath = data.getStringExtra("path")
+                        soundCombine()
+                        Log.d(TAG, "SOUND REQUEST : ${data.getStringExtra("title")} path : $soundPath")
+                    }
                 } else {
                     return
                 }

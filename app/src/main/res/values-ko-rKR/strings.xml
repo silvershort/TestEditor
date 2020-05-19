@@ -8,4 +8,5 @@
     <string name="conversion_save">저장 완료</string>
     <string name="conversion_failed">변환 실패</string>
     <string name="progress_dialog_title_filter">필터 적용 중</string>
+    <string name="common_cannel">취소</string>
 </resources>

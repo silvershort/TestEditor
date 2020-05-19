@@ -17,7 +17,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".FilterActivity"></activity>
+        <activity android:name=".sound.SoundActivity"></activity>
+        <activity android:name=".FilterActivity" />
         <activity android:name=".TrimmerActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
