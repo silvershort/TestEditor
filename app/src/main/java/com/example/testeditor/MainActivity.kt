@@ -27,6 +27,7 @@ import com.daasuu.gpuv.composer.FillMode
 import com.daasuu.gpuv.composer.GPUMp4Composer
 import com.daasuu.gpuv.egl.filter.GlFilter
 import com.daasuu.gpuv.player.GPUPlayerView
+import com.example.testeditor.dialog.CircleProgressDialog
 import com.example.testeditor.dialog.CustomProgressDialog
 import com.example.testeditor.dialog.TextStickerEditDialog
 import com.example.testeditor.mp4filter.FilterAdapter
@@ -65,9 +66,6 @@ class MainActivity : AppCompatActivity() {
     }
     private lateinit var simpleExoPlayer: SimpleExoPlayer
     lateinit var mediaSource: MediaSource
-
-//    private lateinit var soundExoPlayer: SimpleExoPlayer
-//    lateinit var soundMediaSource: MediaSource
 
     //    뷰 및 필터 변수
     val gpuPlayerView: GPUPlayerView by lazy {
@@ -138,7 +136,6 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         try {
             simpleExoPlayer.playWhenReady = false
-//            soundExoPlayer.playWhenReady = false
         } catch (e: Exception) {
         }
     }
@@ -147,8 +144,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // 권한 체크
         setupPermissions()
 
+        // 툴바를 액션바로 지정하고 기본 타이틀을 숨김
         setSupportActionBar(main_toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
@@ -158,19 +157,23 @@ class MainActivity : AppCompatActivity() {
         main_tv_sound.ellipsize = TextUtils.TruncateAt.MARQUEE
         main_tv_sound.isSelected = true
 
+        // 필터 이름에 기본값을 넣음
         filterName = FilterType.DEFAULT.name
 
+        // 필터 리사이클러뷰에 어댑터를 연결
         val filterAdapter =
             FilterAdapter(FilterType.createFilterList())
         main_recycler_filter.adapter = filterAdapter
         main_recycler_filter.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
+        // 스티커 리사이클러뷰에 어댑터를 연결
         val imgStickerAdapter = ImgStickerAdapter(imgStickerList)
         main_recycler_sticker.adapter = imgStickerAdapter
         main_recycler_sticker.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
+        // 필터아이템 선택시 리스너
         filterAdapter.setOnFilterListener(object : OnFilterClickListener {
             override fun onFilterClick(holder: FilterAdapter.FilterHolder, position: Int) {
                 filterName = holder.filter_tv.text.toString();
@@ -182,6 +185,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 스티커 아이탬 선택시 리스너
         imgStickerAdapter.setOnImgStickerClickListener(object : OnImgStickerClickListener {
             override fun onStickerClick(holder: ImgStickerAdapter.ImgStickerHolder, position: Int) {
                 val imgSticker: StickerImageView = StickerImageView(this@MainActivity)
@@ -191,6 +195,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 갤러리에서 파일 불러오는 리스너
         main_ib_add.setOnClickListener(View.OnClickListener {
             val intent = Intent(Intent.ACTION_PICK);
             intent.data = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
@@ -198,6 +203,7 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, GALLERY_REQUEST_CODE)
         })
 
+        // 트리밍 기능
         main_ib_new_trim.setOnClickListener(View.OnClickListener {
             if (path == null) {
                 toast("영상을 선택해주세요")
@@ -208,6 +214,7 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, TRIM_REQUEST_CODE)
         })
 
+        // 필터 기능
         main_ib_filter.setOnClickListener(View.OnClickListener {
             if (main_recycler_filter.isVisible) {
                 main_recycler_filter.startAnimation(bottomDown)
@@ -229,6 +236,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 스티커 기능
         main_ib_sticker.setOnClickListener(View.OnClickListener {
             if (main_recycler_sticker.isVisible) {
                 main_recycler_sticker.startAnimation(bottomDown)
@@ -251,6 +259,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 텍스트 스티커 기능
         main_ib_text.setOnClickListener(View.OnClickListener {
             val textSticker: StickerTextView = StickerTextView(this)
             stickertvList.add(textSticker)
@@ -267,6 +276,7 @@ class MainActivity : AppCompatActivity() {
             main_layout_sticker.addView(textSticker)
         })
 
+        // 메인 레이아웃 클릭 리스너
         main_layout_main.setOnClickListener(View.OnClickListener {
             for (x in stickerIvList) {
                 x.setControlItemsHidden(true)
@@ -276,6 +286,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 스티커 클릭 리스너
         main_layout_sticker.setOnClickListener(View.OnClickListener {
             for (x in stickerIvList) {
                 x.setControlItemsHidden(true)
@@ -285,6 +296,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 오디오 추가
         main_ib_audio.setOnClickListener(View.OnClickListener {
             val intent = Intent(this, SoundActivity::class.java)
             if (!soundPath.isNullOrEmpty()) {
@@ -293,6 +305,7 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, SOUND_REQUEST_CODE)
         })
 
+        // 완료 버튼
         main_tv_complete.setOnClickListener(View.OnClickListener {
             Log.d(TAG, "완료 버튼이 눌림")
             Log.d(TAG, "원본 경로 : $path")
@@ -385,22 +398,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executeVideo(type: Int) {
+//        val filterPath = File(Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST").absolutePath + "/snow_white.acv"
+        val filterPath: String? = Uri.parse("android.resource\\\\://${packageName}/afterglow.acv").toString()
+
         if (!(stickerIvList.isEmpty() && stickertvList.isEmpty())) {
             Log.d(TAG, "스티커 변경")
             combineSticker()
         }
 
         val cmd = when (type) {
-            // 흑백 효과
-            1 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, hue=s=0' -y $savePath"
-
-//            2-> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, boxblur=luma_radius=2:luma_power=1' -y $savePath"
-//            2-> "-i $path -i $imgPath -i $soundPath -shortest -c:a aac -strict experimental -filter_complex '[0:v][1:v]overlay=0:0' -y $savePath"
-            2-> "-i $path -i $soundPath -c:v copy -c:a aac -shortest -strict experimental -map 0:v:0 -map 1:a:0 -y $savePath"
-            // 세피아 효과
-            3 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131' -y $savePath"
-            else -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0' -y $savePath"
+//            2-> "-i $path -vf curves=psfile=$filterPath -y $savePath"
+            2 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, curves=psfile=$filterPath' -y $savePath"
+            else -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0'  -y $savePath"
         }
+
         Log.d (TAG, "cmd : $cmd")
         Thread(Runnable {
             val rc = FFmpeg.execute(cmd)
@@ -423,15 +434,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        proDialog = CustomProgressDialog(getString(R.string.progress_dialog_title))
-        proDialog.show(supportFragmentManager, "proDialog")
-        proDialog.setDialogResultInterface(object : CustomProgressDialog.OnDialogResult {
-            override fun finish() {
-                FFmpeg.cancel()
-                runOnUiThread { toast(getString(R.string.conversion_cancel)) }
-            }
-        })
-
         // FFmpeg 프로그래스
         Config.enableStatisticsCallback(StatisticsCallback {
             val progress = (it.time / duration.toDouble())
@@ -443,6 +445,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun soundCombine() {
+        val circlePro = CircleProgressDialog()
+        circlePro.show(supportFragmentManager, "circlePro")
+
         val soundInfo = FFprobe.getMediaInformation(soundPath)
 
         Log.d(TAG, "사운드 길이 : ${soundInfo.duration} 영상 길이 : ${duration}")
@@ -467,6 +472,8 @@ class MainActivity : AppCompatActivity() {
             } else {
                 runOnUiThread { toast(getString(R.string.conversion_failed)) }
             }
+
+            runOnUiThread { circlePro.dismiss() }
         }).start()
     }
 

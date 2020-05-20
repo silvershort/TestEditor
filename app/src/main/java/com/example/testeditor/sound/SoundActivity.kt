@@ -2,6 +2,7 @@ package com.example.testeditor.sound
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -17,6 +18,15 @@ import com.example.testeditor.R
 import com.example.testeditor.api.APIClient
 import com.example.testeditor.dialog.CircleProgressDialog
 import com.example.testeditor.dialog.CustomProgressDialog
+import com.google.android.exoplayer2.ExoPlayerFactory
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.source.ExtractorMediaSource
+import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelector
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.util.Util
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
@@ -29,6 +39,16 @@ class SoundActivity : AppCompatActivity() {
 
     private val TAG = "!!!SoundActivity!!!"
     private val EMPTY_RESULT = -1
+
+    private var soundExoPlayer: SimpleExoPlayer? = null
+    private lateinit var soundMediaSource: MediaSource
+    private val trackSelector: TrackSelector = DefaultTrackSelector()
+    private val dataFactory: DefaultDataSourceFactory by lazy {
+        DefaultDataSourceFactory(
+            this,
+            Util.getUserAgent(this, getString(R.string.app_name))
+        )
+    }
 
     private var soundPath: String? = null
 
@@ -59,6 +79,16 @@ class SoundActivity : AppCompatActivity() {
         )
     )
 
+    override fun onPause() {
+        soundExoPlayer?.playWhenReady = false
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        soundExoPlayer?.release()
+        super.onDestroy()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sound)
@@ -84,10 +114,6 @@ class SoundActivity : AppCompatActivity() {
         sound_recyclerview.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
 
         sound_tv_cannel.setOnClickListener(View.OnClickListener {
-
-        })
-
-        sound_tv_cannel.setOnClickListener(View.OnClickListener {
             soundEmpty = true
             sound_tv_current.text = ""
             sound_layout_selected.visibility = View.GONE
@@ -95,6 +121,16 @@ class SoundActivity : AppCompatActivity() {
 
         soundSelectAdapter.setOnSoundSelectClickListener(object : OnSoundSelectClickListener {
             override fun playButtonClick(holder: SoundSelectAdapter.SoundHolder, position: Int) {
+                if (soundSelectAdapter.seletedPosition == position) {
+                    soundSelectAdapter.notifyItemChanged(soundSelectAdapter.seletedPosition)
+                    soundSelectAdapter.seletedPosition = -1
+                    soundExoPlayer?.playWhenReady = false
+                } else {
+                    soundSelectAdapter.notifyItemChanged(soundSelectAdapter.seletedPosition)
+                    soundSelectAdapter.seletedPosition = position
+                    holder.audio_ib_play.setImageResource(R.drawable.ic_pause_black_24dp)
+                    setSound("https://incompetech.com/" + soundList[position].url)
+                }
             }
 
             override fun selectButtonClick(holder: SoundSelectAdapter.SoundHolder, position: Int) {
@@ -141,7 +177,19 @@ class SoundActivity : AppCompatActivity() {
         })
     }
 
-    fun setResultFisish(position: Int) {
+    private fun setSound(url: String) {
+        if (soundExoPlayer != null) {
+            soundExoPlayer?.release()
+        }
+        soundMediaSource =
+            ExtractorMediaSource.Factory(dataFactory).createMediaSource(Uri.parse(url))
+        soundExoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector)
+        soundExoPlayer?.repeatMode = Player.REPEAT_MODE_ONE
+        soundExoPlayer?.prepare(soundMediaSource)
+        soundExoPlayer?.playWhenReady = true
+    }
+
+    private fun setResultFisish(position: Int) {
         val intent = Intent()
 
         if (position == EMPTY_RESULT) {
@@ -156,7 +204,7 @@ class SoundActivity : AppCompatActivity() {
         finish()
     }
 
-    fun writeResponseBodyToDisk(body: ResponseBody, position: Int): Boolean {
+    private fun writeResponseBodyToDisk(body: ResponseBody, position: Int): Boolean {
         var inputStream: InputStream? = null
         var outputStream: OutputStream? = null
 
@@ -166,6 +214,7 @@ class SoundActivity : AppCompatActivity() {
         var fileSizeDownloaded = 0;
 
         inputStream = body.byteStream()
+
         outputStream = FileOutputStream(file)
 
         while(true) {

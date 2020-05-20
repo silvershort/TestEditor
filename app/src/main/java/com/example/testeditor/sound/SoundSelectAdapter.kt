@@ -14,6 +14,7 @@ class SoundSelectAdapter (val items: ArrayList<SoundData>) : RecyclerView.Adapte
     OnSoundSelectClickListener {
 
     private val TAG = "!!!AudioSelectAdapter!!!"
+    var seletedPosition: Int = -1
 
     lateinit var listener: OnSoundSelectClickListener
 
@@ -60,6 +61,9 @@ class SoundSelectAdapter (val items: ArrayList<SoundData>) : RecyclerView.Adapte
         items[position].let {
             Log.d(TAG, it.url)
             holder.onBind(it)
+            if (seletedPosition != position) {
+                holder.audio_ib_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
+            }
         }
     }
 

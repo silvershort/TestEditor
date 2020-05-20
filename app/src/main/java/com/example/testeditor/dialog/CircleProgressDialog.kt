@@ -40,7 +40,7 @@ class CircleProgressDialog : DialogFragment() {
 /*                if (dialogResult != null) {
                     dialogResult.finish()
                 }*/
-                dismiss()
+//                dismiss()
             }
         }
     }
