@@ -1,10 +1,10 @@
 package com.example.testeditor
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
@@ -23,19 +23,30 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.arthenica.mobileffmpeg.*
+import com.arthenica.mobileffmpeg.Config
+import com.arthenica.mobileffmpeg.FFmpeg
+import com.arthenica.mobileffmpeg.FFprobe
+import com.arthenica.mobileffmpeg.StatisticsCallback
 import com.daasuu.gpuv.composer.FillMode
 import com.daasuu.gpuv.composer.GPUMp4Composer
 import com.daasuu.gpuv.egl.filter.GlFilter
 import com.daasuu.gpuv.player.GPUPlayerView
 import com.example.testeditor.dialog.CircleProgressDialog
 import com.example.testeditor.dialog.CustomProgressDialog
+import com.example.testeditor.dialog.TextEditorDialogFragment
 import com.example.testeditor.dialog.TextStickerEditDialog
 import com.example.testeditor.mp4filter.FilterAdapter
 import com.example.testeditor.mp4filter.FilterType
 import com.example.testeditor.sound.SoundActivity
-import com.example.testeditor.sticker.StickerImageView
-import com.example.testeditor.sticker.StickerTextView
+import com.example.testeditor.sticker.utils.FontProvider
+import com.example.testeditor.sticker.viewmodel.Font
+import com.example.testeditor.sticker.viewmodel.Layer
+import com.example.testeditor.sticker.viewmodel.TextLayer
+import com.example.testeditor.sticker.widget.MotionView
+import com.example.testeditor.sticker.widget.MotionView.MotionViewCallback
+import com.example.testeditor.sticker.widget.entity.ImageEntity
+import com.example.testeditor.sticker.widget.entity.MotionEntity
+import com.example.testeditor.sticker.widget.entity.TextEntity
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -46,15 +57,12 @@ import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
 import org.jetbrains.anko.toast
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
-import java.lang.Runnable
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCallback{
 
     private val TAG = "!!!MainActivity!!!"
 
@@ -81,8 +89,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var proDialog: CustomProgressDialog
 
     // 스티커 변수
-    var stickerIvList = mutableListOf<StickerImageView>()
-    var stickertvList = mutableListOf<StickerTextView>()
+    var stickerIvList = mutableListOf<String>()
+    var stickertvList = mutableListOf<String>()
     val imgStickerList = arrayListOf(
         R.drawable.test_sticker1,
         R.drawable.test_sticker2,
@@ -93,7 +101,25 @@ class MainActivity : AppCompatActivity() {
         R.drawable.test_sticker7,
         R.drawable.test_sticker8
     )
+
+    val fontProvider by lazy { FontProvider(resources) }
     val textStickerEditDialog: TextStickerEditDialog = TextStickerEditDialog()
+    lateinit var motionView: MotionView
+    var textEntityEditPanel: View? = null
+
+    private val motionViewCallback: MotionViewCallback = object : MotionViewCallback {
+        override fun onEntitySelected(entity: MotionEntity?) {
+            if (entity is TextEntity) {
+                textEntityEditPanel?.visibility = View.VISIBLE;
+            } else {
+                textEntityEditPanel?.visibility = View.GONE;
+            }
+        }
+
+        override fun onEntityDoubleTap(entity: MotionEntity) {
+        }
+    }
+
 
     // 파일 변환을 위한 변수
     var overlayImage: Bitmap? = null
@@ -159,6 +185,9 @@ class MainActivity : AppCompatActivity() {
         main_tv_sound.ellipsize = TextUtils.TruncateAt.MARQUEE
         main_tv_sound.isSelected = true
 
+        motionView = findViewById(R.id.main_layout_sticker)
+        motionView.setMotionViewCallback(motionViewCallback)
+
         // 필터 이름에 기본값을 넣음
         filterName = FilterType.DEFAULT.name
 
@@ -190,10 +219,13 @@ class MainActivity : AppCompatActivity() {
         // 스티커 아이탬 선택시 리스너
         imgStickerAdapter.setOnImgStickerClickListener(object : OnImgStickerClickListener {
             override fun onStickerClick(holder: ImgStickerAdapter.ImgStickerHolder, position: Int) {
-                val imgSticker: StickerImageView = StickerImageView(this@MainActivity)
-                imgSticker.setImageResource(imgStickerList[position])
-                stickerIvList.add(imgSticker)
-                main_layout_sticker.addView(imgSticker)
+                Log.d(TAG, "스티커 아이템 눌림 : $position")
+
+                val layer = Layer()
+                val bitmap = BitmapFactory.decodeResource(resources, imgStickerList[position])
+
+                val entity = ImageEntity(layer, bitmap, motionView.width, motionView.height)
+                motionView.addEntityAndPosition(entity)
             }
         })
 
@@ -263,40 +295,40 @@ class MainActivity : AppCompatActivity() {
 
         // 텍스트 스티커 기능
         main_ib_text.setOnClickListener(View.OnClickListener {
-            val textSticker: StickerTextView = StickerTextView(this)
-            stickertvList.add(textSticker)
+//            val textSticker: StickerTextView = StickerTextView(this)
+//            stickertvList.add(textSticker)
 
             textStickerEditDialog.show(supportFragmentManager, "editTextDialog")
             textStickerEditDialog.setDialogResultInterface(object :
                 TextStickerEditDialog.OnDialogResult {
                 override fun finish(text: String) {
                     if (!TextUtils.isEmpty(text)) {
-                        textSticker.text = text
+//                        textSticker.text = text
                     }
                 }
             })
-            main_layout_sticker.addView(textSticker)
+//            main_layout_sticker.addView(textSticker)
         })
 
-        // 메인 레이아웃 클릭 리스너
-        main_layout_main.setOnClickListener(View.OnClickListener {
-            for (x in stickerIvList) {
-                x.setControlItemsHidden(true)
-            }
-            for (x in stickertvList) {
-                x.setControlItemsHidden(true)
-            }
-        })
-
-        // 스티커 클릭 리스너
-        main_layout_sticker.setOnClickListener(View.OnClickListener {
-            for (x in stickerIvList) {
-                x.setControlItemsHidden(true)
-            }
-            for (x in stickertvList) {
-                x.setControlItemsHidden(true)
-            }
-        })
+//        // 메인 레이아웃 클릭 리스너
+//        main_layout_main.setOnClickListener(View.OnClickListener {
+//            for (x in stickerIvList) {
+//                x.setControlItemsHidden(true)
+//            }
+//            for (x in stickertvList) {
+//                x.setControlItemsHidden(true)
+//            }
+//        })
+//
+//        // 스티커 클릭 리스너
+//        main_layout_sticker.setOnClickListener(View.OnClickListener {
+//            for (x in stickerIvList) {
+//                x.setControlItemsHidden(true)
+//            }
+//            for (x in stickertvList) {
+//                x.setControlItemsHidden(true)
+//            }
+//        })
 
         // 오디오 추가
         main_ib_audio.setOnClickListener(View.OnClickListener {
@@ -337,6 +369,51 @@ class MainActivity : AppCompatActivity() {
                 }
             }*/
         })
+    }
+
+    private fun initTextEntitiesListeners() {
+    }
+
+    fun startTextEntityEditing() {
+        val textEntity = currentTextEntity()
+        if (textEntity != null) {
+            val fragment = TextEditorDialogFragment.getInstance(textEntity.layer.text)
+            fragment.show(supportFragmentManager, "textStickerDialog")
+        }
+    }
+
+    fun currentTextEntity() =
+        if (motionView != null && motionView.selectedEntity is TextEntity)
+            motionView.selectedEntity as TextEntity
+        else null
+
+    fun addTextSticker() {
+        val textLayer = createTextLayer()
+        val textEntity = TextEntity(textLayer, motionView.width, motionView.height, fontProvider)
+        motionView.addEntityAndPosition(textEntity)
+
+        val center = textEntity.absoluteCenter()
+        center.y = center.y * 0.5F
+        textEntity.moveCenterTo(center)
+
+        motionView.invalidate()
+    }
+
+    fun createTextLayer() : TextLayer {
+        val textLayer = TextLayer()
+        val font = Font()
+
+        font.color = TextLayer.Limits.INITIAL_FONT_COLOR
+        font.size = TextLayer.Limits.INITIAL_FONT_SIZE
+        font.typeface = fontProvider.defaultFontName
+
+        textLayer.font = font
+
+        if (BuildConfig.DEBUG) {
+            textLayer.text = "Hello, world"
+        }
+
+        return textLayer
     }
 
     private fun setFilter() {
@@ -519,12 +596,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun combineSticker() {
-        for (item in stickerIvList) {
+        /*for (item in stickerIvList) {
             item.setControlItemsHidden(true)
         }
         for (item in stickertvList) {
             item.setControlItemsHidden(true)
-        }
+        }*/
 
         main_layout_sticker.isDrawingCacheEnabled = true
         main_layout_sticker.buildDrawingCache()
@@ -713,5 +790,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun textChanged(text: String) {
     }
 }

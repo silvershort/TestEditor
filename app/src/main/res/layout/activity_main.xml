@@ -42,7 +42,7 @@
         app:layout_constraintTop_toBottomOf="@+id/main_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
-    <FrameLayout
+    <com.example.testeditor.sticker.widget.MotionView
         android:id="@+id/main_layout_sticker"
         android:layout_width="match_parent"
         android:layout_height="0dp"
