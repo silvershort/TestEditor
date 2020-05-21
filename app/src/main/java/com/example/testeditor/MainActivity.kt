@@ -1,6 +1,7 @@
 package com.example.testeditor
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -50,6 +51,7 @@ import org.jetbrains.anko.toast
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.lang.Runnable
 
 class MainActivity : AppCompatActivity() {
@@ -320,22 +322,24 @@ class MainActivity : AppCompatActivity() {
                 directory.mkdir()
             }
 
-            if (filterName != FilterType.DEFAULT.name) {
+            executeVideo(0)
+
+            /*if (filterName != FilterType.DEFAULT.name) {
                 Log.d(TAG, "완료 : 필터 변경")
                 setFilter(isFFmpeg())
             } else {
                 if (isFFmpeg()) {
                     Log.d(TAG, "완료 : 필터 변경 없음")
-                    executeVideo(2)
+                    executeVideo(0)
                 } else {
                     Log.d(TAG, "아무 동작 안함")
                     runOnUiThread { toast("변경된 사항이 없습니다.") }
                 }
-            }
+            }*/
         })
     }
 
-    private fun setFilter(ffmpeg: Boolean) {
+    private fun setFilter() {
         proDialog = CustomProgressDialog(getString(R.string.progress_dialog_title_filter))
         proDialog.show(supportFragmentManager, "progressDialog")
         proDialog.setDialogResultInterface(object : CustomProgressDialog.OnDialogResult {
@@ -344,7 +348,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        gpuMp4Composer = GPUMp4Composer(path, "${cacheDir.canonicalPath}/temp.mp4")
+        gpuMp4Composer = GPUMp4Composer(path, savePath)
             .filter(
                 FilterType.createGlFilter(
                     FilterType.valueOf(filterName), applicationContext, overlayImage
@@ -372,20 +376,14 @@ class MainActivity : AppCompatActivity() {
                     proDialog.dismiss()
                     Log.d(TAG, "변환 성공")
                     Log.d(TAG, "uri : " + Uri.parse(savePath))
-
-                    if (ffmpeg) {
-                        setFilePath("${cacheDir.canonicalPath}/temp_filter.mp4")
-                        executeVideo(0)
-                    } else {
-                        scanSaveFile()
-                    }
+                    scanSaveFile()
                 }
             })
         gpuMp4Composer.start()
     }
 
-    private fun isFFmpeg(): Boolean {
-        return !(stickerIvList.isEmpty() && stickertvList.isEmpty())
+    private fun isFilter(): Boolean {
+        return filterName != FilterType.DEFAULT.name
     }
 
     private fun scanSaveFile() {
@@ -398,50 +396,93 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executeVideo(type: Int) {
-//        val filterPath = File(Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST").absolutePath + "/snow_white.acv"
-        val filterPath: String? = Uri.parse("android.resource\\\\://${packageName}/afterglow.acv").toString()
 
         if (!(stickerIvList.isEmpty() && stickertvList.isEmpty())) {
             Log.d(TAG, "스티커 변경")
             combineSticker()
-        }
 
-        val cmd = when (type) {
-//            2-> "-i $path -vf curves=psfile=$filterPath -y $savePath"
-            2 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, curves=psfile=$filterPath' -y $savePath"
-            else -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0'  -y $savePath"
-        }
+            val outPath = if (isFilter()) "${cacheDir.canonicalPath}/temp.mp4" else savePath
 
-        Log.d (TAG, "cmd : $cmd")
-        Thread(Runnable {
-            val rc = FFmpeg.execute(cmd)
+            val cmd = when (type) {
+//            2-> "-i $path -vf curves=psfile=${tempFilterFile.absolutePath} -y $outPath"
+//            2 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, curves=psfile=${tempFilterFile.absolutePath}' -y $outPath"
+//            else-> "-i $path -vf curves=lighter -c:a copy -y $outPath"
+                else -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0'  -y $outPath"
+            }
 
-            if (rc == Config.RETURN_CODE_SUCCESS) {
-                Log.d(TAG, "변환 완료")
-                proDialog.dismiss()
-                scanSaveFile()
+            Log.d (TAG, "cmd : $cmd")
+            Thread(Runnable {
+                val rc = FFmpeg.execute(cmd)
+
+                if (rc == Config.RETURN_CODE_SUCCESS) {
+                    proDialog.dismiss()
+                    if (isFilter()) {
+                        setFilePath(outPath)
+                        setFilter()
+                    } else {
+                        scanSaveFile()
+                    }
+                } else {
+                    runOnUiThread { toast(getString(R.string.conversion_failed)) }
+                }
+            }).start()
+
+            proDialog = CustomProgressDialog(getString(R.string.progress_dialog_title))
+            proDialog.show(supportFragmentManager, "proDialog")
+            proDialog.setDialogResultInterface(object : CustomProgressDialog.OnDialogResult {
+                override fun finish() {
+                    FFmpeg.cancel()
+                    runOnUiThread { toast(getString(R.string.conversion_cancel)) }
+                }
+            })
+
+            // FFmpeg 프로그래스
+            Config.enableStatisticsCallback(StatisticsCallback {
+                val progress = (it.time / duration.toDouble())
+                Log.d(TAG, String.format("frame: ${it.videoFrameNumber} time: ${it.time}"))
+                Log.d(TAG, String.format("progress: $progress"))
+                Log.d(TAG, "rc : ${Config.getLastReturnCode()} suc: ${Config.RETURN_CODE_SUCCESS}")
+                proDialog.setText(progress)
+            })
+        } else {
+            Log.d(TAG, "변경사항이 없습니다.")
+
+            if (isFilter()) {
+                toast(getString(R.string.common_no_change))
             } else {
-                runOnUiThread { toast(getString(R.string.conversion_failed)) }
+                setFilter()
             }
-        }).start()
+        }
 
-        proDialog = CustomProgressDialog(getString(R.string.progress_dialog_title))
-        proDialog.show(supportFragmentManager, "proDialog")
-        proDialog.setDialogResultInterface(object : CustomProgressDialog.OnDialogResult {
-            override fun finish() {
-                FFmpeg.cancel()
-                runOnUiThread { toast(getString(R.string.conversion_cancel)) }
+        /*val inputStream = resources.openRawResource(R.raw.aurora);
+        val tempFilterPath = getDir("tempFilter", Context.MODE_PRIVATE)
+        val tempFilterFile = File(tempFilterPath, "${filterName.toLowerCase()}.acv")
+
+        try {
+            val outputStream = FileOutputStream(tempFilterFile)
+
+            val fileReader = ByteArray(4096)
+            var bytesRead = 0
+
+            while (true) {
+                val read = inputStream.read(fileReader)
+
+                if (read == -1) {
+                    break
+                }
+
+                outputStream.write(fileReader, 0, read)
+                bytesRead += read
             }
-        })
 
-        // FFmpeg 프로그래스
-        Config.enableStatisticsCallback(StatisticsCallback {
-            val progress = (it.time / duration.toDouble())
-            Log.d(TAG, String.format("frame: ${it.videoFrameNumber} time: ${it.time}"))
-            Log.d(TAG, String.format("progress: $progress"))
-            Log.d(TAG, "rc : ${Config.getLastReturnCode()} suc: ${Config.RETURN_CODE_SUCCESS}")
-            proDialog.setText(progress)
-        })
+            outputStream.flush()
+
+            inputStream.close()
+            outputStream.close()
+
+        } catch (e: IOException) {
+            Log.d(TAG, e.printStackTrace().toString())
+        }*/
     }
 
     private fun soundCombine() {

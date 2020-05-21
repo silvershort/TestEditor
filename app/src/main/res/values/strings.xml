@@ -9,4 +9,5 @@
     <string name="progress_dialog_title_filter">Filter being applied</string>
     <string name="common_cannel">Cannel</string>
     <string name="common_wait">Please wait...</string>
+    <string name="common_no_change">No changes</string>
 </resources>
