@@ -1,6 +1,7 @@
 package com.example.testeditor
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -16,8 +17,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
+import android.widget.Button
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -42,11 +45,14 @@ import com.example.testeditor.sticker.utils.FontProvider
 import com.example.testeditor.sticker.viewmodel.Font
 import com.example.testeditor.sticker.viewmodel.Layer
 import com.example.testeditor.sticker.viewmodel.TextLayer
+import com.example.testeditor.sticker.widget.FontAdapter
 import com.example.testeditor.sticker.widget.MotionView
 import com.example.testeditor.sticker.widget.MotionView.MotionViewCallback
 import com.example.testeditor.sticker.widget.entity.ImageEntity
 import com.example.testeditor.sticker.widget.entity.MotionEntity
 import com.example.testeditor.sticker.widget.entity.TextEntity
+import com.flask.colorpicker.ColorPickerView
+import com.flask.colorpicker.builder.ColorPickerDialogBuilder
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -117,6 +123,7 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
         }
 
         override fun onEntityDoubleTap(entity: MotionEntity) {
+            startTextEntityEditing()
         }
     }
 
@@ -187,6 +194,7 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
 
         motionView = findViewById(R.id.main_layout_sticker)
         motionView.setMotionViewCallback(motionViewCallback)
+        textEntityEditPanel = findViewById(R.id.main_layout_text_edit)
 
         // 필터 이름에 기본값을 넣음
         filterName = FilterType.DEFAULT.name
@@ -203,6 +211,13 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
         main_recycler_sticker.adapter = imgStickerAdapter
         main_recycler_sticker.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+
+        initTextEntitiesListeners();
+
+        main_toolbar.setOnClickListener(View.OnClickListener {
+            Log.d(TAG, "툴바가 선택됨")
+            main_layout_sticker.unselectEntity()
+        })
 
         // 필터아이템 선택시 리스너
         filterAdapter.setOnFilterListener(object : OnFilterClickListener {
@@ -295,19 +310,7 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
 
         // 텍스트 스티커 기능
         main_ib_text.setOnClickListener(View.OnClickListener {
-//            val textSticker: StickerTextView = StickerTextView(this)
-//            stickertvList.add(textSticker)
-
-            textStickerEditDialog.show(supportFragmentManager, "editTextDialog")
-            textStickerEditDialog.setDialogResultInterface(object :
-                TextStickerEditDialog.OnDialogResult {
-                override fun finish(text: String) {
-                    if (!TextUtils.isEmpty(text)) {
-//                        textSticker.text = text
-                    }
-                }
-            })
-//            main_layout_sticker.addView(textSticker)
+            addTextSticker()
         })
 
 //        // 메인 레이아웃 클릭 리스너
@@ -372,6 +375,77 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
     }
 
     private fun initTextEntitiesListeners() {
+        findViewById<Button>(R.id.text_entity_font_size_increase).setOnClickListener(View.OnClickListener {
+            increaseTextEntitySize()
+        })
+        findViewById<Button>(R.id.text_entity_font_size_decrease).setOnClickListener(View.OnClickListener {
+            decreaseTextEntitySize()
+        })
+        findViewById<Button>(R.id.text_entity_color_change).setOnClickListener(View.OnClickListener {
+            changeTextEntityColor()
+        })
+        findViewById<Button>(R.id.text_entity_font_change).setOnClickListener(View.OnClickListener {
+            changeTextEntityFont()
+        })
+        findViewById<Button>(R.id.text_entity_edit).setOnClickListener(View.OnClickListener {
+            startTextEntityEditing()
+        })
+        findViewById<Button>(R.id.text_entity_delete).setOnClickListener(View.OnClickListener {
+            deleteTextEntity()
+        })
+    }
+
+    fun increaseTextEntitySize() {
+        val textEntity = currentTextEntity() ?: return
+        textEntity.layer.font.increaseSize(TextLayer.Limits.FONT_SIZE_STEP)
+        textEntity.updateEntity()
+        motionView.invalidate()
+    }
+
+    fun decreaseTextEntitySize() {
+        val textEntity = currentTextEntity() ?: return
+        textEntity.layer.font.decreaseSize(TextLayer.Limits.FONT_SIZE_STEP)
+        textEntity.updateEntity()
+        motionView.invalidate()
+    }
+
+    fun changeTextEntityColor() {
+        val textEntity = currentTextEntity() ?: return
+        val initialColor = textEntity.layer.font.color
+
+        ColorPickerDialogBuilder
+            .with(this@MainActivity)
+            .setTitle("색상선택")
+            .initialColor(initialColor)
+            .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+            .density(8)
+            .setPositiveButton("완료"
+            ) { d, lastSelectedColor, allColors ->
+                val textEntity = currentTextEntity()
+                if (textEntity != null) {
+                    textEntity.layer.font.color = lastSelectedColor
+                    textEntity.updateEntity()
+                    motionView.invalidate()
+                }
+            }.setNegativeButton("취소") {
+                dialog, which ->
+
+            }.build().show()
+    }
+
+    fun changeTextEntityFont() {
+        val fonts: MutableList<String> = fontProvider.fontNames
+        val fontAdapter = FontAdapter(this@MainActivity, fonts, fontProvider)
+        AlertDialog.Builder(this@MainActivity)
+            .setTitle("폰트 선택")
+            .setAdapter(fontAdapter) { dialog, which ->
+                val textEntity = currentTextEntity()
+                if (textEntity != null) {
+                    textEntity.layer.font.typeface = fonts[which]
+                    textEntity.updateEntity()
+                    motionView.invalidate()
+                }
+            }.show()
     }
 
     fun startTextEntityEditing() {
@@ -379,6 +453,13 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
         if (textEntity != null) {
             val fragment = TextEditorDialogFragment.getInstance(textEntity.layer.text)
             fragment.show(supportFragmentManager, "textStickerDialog")
+        }
+    }
+
+    private fun deleteTextEntity() {
+        val textEntity = currentTextEntity()
+        if (textEntity != null) {
+            motionView.deleteEntity(textEntity)
         }
     }
 
@@ -397,6 +478,8 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
         textEntity.moveCenterTo(center)
 
         motionView.invalidate()
+
+        startTextEntityEditing();
     }
 
     fun createTextLayer() : TextLayer {
@@ -474,7 +557,7 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
 
     private fun executeVideo(type: Int) {
 
-        if (!(stickerIvList.isEmpty() && stickertvList.isEmpty())) {
+        if (true) {
             Log.d(TAG, "스티커 변경")
             combineSticker()
 
@@ -613,10 +696,7 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
 
         overlayImage = Bitmap.createScaledBitmap(
             main_layout_sticker.drawingCache,
-            videoWidth,
-            (main_layout_sticker.height / (main_layout_sticker.width / videoWidth.toDouble())).toInt(),
-            true
-        )
+            videoWidth, videoHeight,true)
         Log.d(TAG, overlayImage.toString())
         val storage = File(
             Environment.getExternalStorageDirectory()
@@ -793,5 +873,12 @@ class MainActivity : AppCompatActivity(), TextEditorDialogFragment.OnTextLayerCa
     }
 
     override fun textChanged(text: String) {
+        val textEntity = currentTextEntity() ?: return
+        val textLayer = textEntity.layer
+        if (text != textLayer.text) {
+            textLayer.text = text
+            textEntity.updateEntity()
+            motionView.invalidate()
+        }
     }
 }

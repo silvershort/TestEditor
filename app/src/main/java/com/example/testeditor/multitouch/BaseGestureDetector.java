@@ -1,6 +1,7 @@
 package com.example.testeditor.multitouch;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.MotionEvent;
 
 /**

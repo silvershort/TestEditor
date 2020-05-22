@@ -42,13 +42,78 @@
         app:layout_constraintTop_toBottomOf="@+id/main_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
-    <com.example.testeditor.sticker.widget.MotionView
+    <!--<com.example.testeditor.sticker.widget.MotionView
         android:id="@+id/main_layout_sticker"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/transparent"
         app:layout_constraintTop_toTopOf="@+id/main_playerview"
-        app:layout_constraintBottom_toBottomOf="@+id/main_playerview"/>
+        app:layout_constraintBottom_toBottomOf="@+id/main_playerview"/>-->
+
+    <com.example.testeditor.sticker.widget.MotionView
+        android:id="@+id/main_layout_sticker"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/transparent"
+        app:layout_constraintTop_toTopOf="@+id/main_toolbar"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <LinearLayout
+        android:id="@+id/main_layout_text_edit"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/main_toolbar">
+
+        <Button
+            android:id="@+id/text_entity_font_size_decrease"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="작게"
+            />
+
+        <Button
+            android:id="@+id/text_entity_font_size_increase"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="크게"
+            />
+
+        <Button
+            android:id="@+id/text_entity_color_change"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="색상"
+            />
+
+        <Button
+            android:id="@+id/text_entity_font_change"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="폰트"
+            />
+
+        <Button
+            android:id="@+id/text_entity_edit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="편집"
+            />
+
+        <Button
+            android:id="@+id/text_entity_delete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="삭제"
+            />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/main_tv_sound"

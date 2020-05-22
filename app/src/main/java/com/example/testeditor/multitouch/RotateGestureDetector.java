@@ -1,6 +1,7 @@
 package com.example.testeditor.multitouch;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.MotionEvent;
 
 /**
@@ -83,8 +84,10 @@ public class RotateGestureDetector extends TwoFingerGestureDetector {
             case MotionEvent.ACTION_POINTER_UP:
                 // Gesture ended but
                 updateStateByEvent(event);
+//                Log.d("!!!", "ACTION_POINTER_UP");
 
                 if (!mSloppyGesture) {
+//                    Log.d("!!!", "ACTION_POINTER_UP : if");
                     mListener.onRotateEnd(this);
                 }
 
@@ -92,7 +95,10 @@ public class RotateGestureDetector extends TwoFingerGestureDetector {
                 break;
 
             case MotionEvent.ACTION_CANCEL:
+//                Log.d("!!!", "ACTION_CANCEL");
+
                 if (!mSloppyGesture) {
+//                    Log.d("!!!", "ACTION_CANCEL : if");
                     mListener.onRotateEnd(this);
                 }
 
@@ -101,13 +107,16 @@ public class RotateGestureDetector extends TwoFingerGestureDetector {
 
             case MotionEvent.ACTION_MOVE:
                 updateStateByEvent(event);
+//                Log.d("!!!", "ACTION_MOVE");
 
                 // Only accept the event if our relative pressure is within
                 // a certain limit. This can help filter shaky data as a
                 // finger is lifted.
                 if (mCurrPressure / mPrevPressure > PRESSURE_THRESHOLD) {
+//                    Log.d("!!!", "ACTION_MOVE : if");
                     final boolean updatePrevious = mListener.onRotate(this);
                     if (updatePrevious) {
+//                        Log.d("!!!", "ACTION_MOVE : if if");
                         mPrevEvent.recycle();
                         mPrevEvent = MotionEvent.obtain(event);
                     }

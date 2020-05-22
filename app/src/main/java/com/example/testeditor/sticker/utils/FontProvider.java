@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class FontProvider {
 
-    private static final String DEFAULT_FONT_NAME = "Helvetica";
+    private static final String DEFAULT_FONT_NAME = "NanumBarunGothic";
 
     private final Map<String, Typeface> typefaces;
     private final Map<String, String> fontNameToTypefaceFile;
@@ -27,18 +27,18 @@ public class FontProvider {
 
         // populate fonts
         fontNameToTypefaceFile = new HashMap<>();
-        fontNameToTypefaceFile.put("Arial", "Arial.ttf");
-        fontNameToTypefaceFile.put("Eutemia", "Eutemia.ttf");
-        fontNameToTypefaceFile.put("GREENPIL", "GREENPIL.ttf");
-        fontNameToTypefaceFile.put("Grinched", "Grinched.ttf");
-        fontNameToTypefaceFile.put("Helvetica", "Helvetica.ttf");
-        fontNameToTypefaceFile.put("Libertango", "Libertango.ttf");
-        fontNameToTypefaceFile.put("Metal Macabre", "MetalMacabre.ttf");
-        fontNameToTypefaceFile.put("Parry Hotter", "ParryHotter.ttf");
-        fontNameToTypefaceFile.put("SCRIPTIN", "SCRIPTIN.ttf");
-        fontNameToTypefaceFile.put("The Godfather v2", "TheGodfather_v2.ttf");
-        fontNameToTypefaceFile.put("Aka Dora", "akaDora.ttf");
-        fontNameToTypefaceFile.put("Waltograph", "waltograph42.ttf");
+        fontNameToTypefaceFile.put("NanumBarunGothic", "NanumBarunGothic.ttf");
+        fontNameToTypefaceFile.put("NanumBarunGothic-YetHangul", "NanumBarunGothic-YetHangul.ttf");
+        fontNameToTypefaceFile.put("NanumBarunGothicBold", "NanumBarunGothicBold.ttf");
+        fontNameToTypefaceFile.put("NanumBarunGothicLight", "NanumBarunGothicLight.ttf");
+        fontNameToTypefaceFile.put("NanumBarunGothicUltraLight", "NanumBarunGothicUltraLight.ttf");
+        fontNameToTypefaceFile.put("NanumBarunpenB", "NanumBarunpenB.ttf");
+        fontNameToTypefaceFile.put("NanumBarunpenR", "NanumBarunpenR.ttf");
+        fontNameToTypefaceFile.put("NanumBrush", "NanumBrush.ttf");
+        fontNameToTypefaceFile.put("NanumGothic", "NanumGothic.ttf");
+        fontNameToTypefaceFile.put("NanumMyeongjo", "NanumMyeongjo.ttf");
+        fontNameToTypefaceFile.put("NanumPen", "NanumPen.ttf");
+        fontNameToTypefaceFile.put("NanumSquare_acB", "NanumSquare_acB.ttf");
 
         fontNames = new ArrayList<>(fontNameToTypefaceFile.keySet());
     }

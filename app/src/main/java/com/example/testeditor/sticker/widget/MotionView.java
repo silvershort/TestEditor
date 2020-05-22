@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -116,6 +117,13 @@ public class MotionView  extends FrameLayout {
         if (entity != null) {
             entities.add(entity);
             selectEntity(entity, false);
+        }
+    }
+
+    public void deleteEntity(@Nullable MotionEntity entity) {
+        if (entity != null) {
+            entities.remove(entity);
+            selectEntity(null, true);
         }
     }
 
@@ -352,7 +360,7 @@ public class MotionView  extends FrameLayout {
         public boolean onScale(ScaleGestureDetector detector) {
             if (selectedEntity != null) {
                 float scaleFactorDiff = detector.getScaleFactor();
-                selectedEntity.getLayer().postScale(scaleFactorDiff - 1.0F);
+                selectedEntity.getLayer().postScale(scaleFactorDiff);
                 updateUI();
             }
             return true;
@@ -363,6 +371,7 @@ public class MotionView  extends FrameLayout {
         @Override
         public boolean onRotate(RotateGestureDetector detector) {
             if (selectedEntity != null) {
+                Log.d("!!!", "회전값 : " + -detector.getRotationDegreesDelta());
                 selectedEntity.getLayer().postRotate(-detector.getRotationDegreesDelta());
                 updateUI();
             }
