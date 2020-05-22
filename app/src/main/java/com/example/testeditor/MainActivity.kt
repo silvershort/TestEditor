@@ -1,10 +1,10 @@
 package com.example.testeditor
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
@@ -96,7 +96,6 @@ class MainActivity : AppCompatActivity() {
     val textStickerEditDialog: TextStickerEditDialog = TextStickerEditDialog()
 
     // 파일 변환을 위한 변수
-    var overlayImage: Bitmap? = null
     var rootPath: String? = null
     var path: String? = null
     var imgPath: String? = null
@@ -181,7 +180,7 @@ class MainActivity : AppCompatActivity() {
                 filterName = holder.filter_tv.text.toString();
                 Log.d(TAG, filterName)
                 glFilter = FilterType.createGlFilter(
-                    FilterType.valueOf(filterName), applicationContext, overlayImage
+                    FilterType.valueOf(filterName), applicationContext, null
                 )
                 gpuPlayerView.setGlFilter(glFilter)
             }
@@ -351,7 +350,7 @@ class MainActivity : AppCompatActivity() {
         gpuMp4Composer = GPUMp4Composer(path, savePath)
             .filter(
                 FilterType.createGlFilter(
-                    FilterType.valueOf(filterName), applicationContext, overlayImage
+                    FilterType.valueOf(filterName), applicationContext, null
                 )
             )
             .fillMode(FillMode.PRESERVE_ASPECT_FIT)
@@ -406,8 +405,8 @@ class MainActivity : AppCompatActivity() {
             val cmd = when (type) {
 //            2-> "-i $path -vf curves=psfile=${tempFilterFile.absolutePath} -y $outPath"
 //            2 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, curves=psfile=${tempFilterFile.absolutePath}' -y $outPath"
-//            else-> "-i $path -vf curves=lighter -c:a copy -y $outPath"
-                else -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0'  -y $outPath"
+//            else-> "-i $path -vf curves=psfile=${Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM}/TEST/afterglow.acv -c:v libx264 -preset ultrafast -c:a copy -y $outPath"
+                else -> "-y -i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0' -c:v libx264 -preset ultrafast -c:a copy $outPath"
             }
 
             Log.d (TAG, "cmd : $cmd")
@@ -526,25 +525,39 @@ class MainActivity : AppCompatActivity() {
             item.setControlItemsHidden(true)
         }
 
-        main_layout_sticker.isDrawingCacheEnabled = true
-        main_layout_sticker.buildDrawingCache()
+//        main_layout_sticker.isDrawingCacheEnabled = true
+//        main_layout_sticker.buildDrawingCache()
 
-        val imgWidth = main_layout_sticker.width
-        val imgHeight = main_layout_sticker.height
+        val viewBitmap = Bitmap.createBitmap(main_layout_sticker.width, main_layout_sticker.height, Bitmap.Config.ARGB_8888);
+        val canvas = Canvas(viewBitmap)
+        main_layout_sticker.draw(canvas)
+
+        var imgWidth: Int = 0
+        var imgHeight: Int = 0
+
+        if (main_layout_sticker.width > main_layout_sticker.height && videoWidth < videoHeight) {
+            imgWidth = main_layout_sticker.height
+            imgHeight = main_layout_sticker.width
+        } else {
+            imgWidth = main_layout_sticker.width
+            imgHeight = main_layout_sticker.height
+        }
+
         Log.d(TAG, "img_width : $imgWidth")
         Log.d(TAG, "img_height : $imgHeight")
+        Log.d(TAG, "view_width : ${main_layout_sticker.width}")
+        Log.d(TAG, "view_height : ${main_layout_sticker.height}")
 
-        overlayImage = Bitmap.createScaledBitmap(
-            main_layout_sticker.drawingCache,
-            videoWidth,
-            (main_layout_sticker.height / (main_layout_sticker.width / videoWidth.toDouble())).toInt(),
-            true
-        )
-        Log.d(TAG, overlayImage.toString())
+//        Log.d(TAG, "convert : ${(main_layout_sticker.height / (main_layout_sticker.width / videoWidth.toDouble())).toInt()}")
+
+        val overlayImage = Bitmap.createScaledBitmap(
+            viewBitmap, imgWidth, imgHeight,false)
+
         val storage = File(
             Environment.getExternalStorageDirectory()
                 .absolutePath + "/" + Environment.DIRECTORY_DCIM + "/TEST"
         )
+
         val fileName = "temp.png"
         val tempFile = File(storage, fileName)
         imgPath = tempFile.absolutePath
@@ -553,7 +566,8 @@ class MainActivity : AppCompatActivity() {
             Log.d("로그", "변환 : " + tempFile.absolutePath)
             tempFile.createNewFile()
             val out = FileOutputStream(tempFile)
-            overlayImage!!.compress(Bitmap.CompressFormat.PNG, 90, out)
+            overlayImage!!.compress(Bitmap.CompressFormat.PNG, 100, out)
+            overlayImage?.recycle()
             out.close()
         } catch (e: IOException) {
             e.printStackTrace()
