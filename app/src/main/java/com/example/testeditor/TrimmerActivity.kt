@@ -141,6 +141,7 @@ class TrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCha
     }
 
     private fun playVideo(path: String, startMillis: Long, endMillis: Long) {
+        Log.d(TAG, "playVideo : $path")
         if (path.isBlank()) return
 
         val source = ExtractorMediaSource.Factory(dataFactory)

@@ -406,7 +406,7 @@ class MainActivity : AppCompatActivity() {
 //            2-> "-i $path -vf curves=psfile=${tempFilterFile.absolutePath} -y $outPath"
 //            2 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, curves=psfile=${tempFilterFile.absolutePath}' -y $outPath"
 //            else-> "-i $path -vf curves=psfile=${Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM}/TEST/afterglow.acv -c:v libx264 -preset ultrafast -c:a copy -y $outPath"
-                else -> "-y -i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0' -c:v libx264 -preset ultrafast -c:a copy $outPath"
+                else -> "-y -i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, colorspace=smpte240m' -c:v libx264 -preset ultrafast -c:a copy $outPath"
             }
 
             Log.d (TAG, "cmd : $cmd")
@@ -451,6 +451,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 setFilter()
             }
+
         }
 
         /*val inputStream = resources.openRawResource(R.raw.aurora);
