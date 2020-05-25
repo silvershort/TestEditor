@@ -37,7 +37,7 @@
     <RelativeLayout
         android:id="@+id/main_playerview"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:gravity="center"
         app:layout_constraintTop_toBottomOf="@+id/main_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"/>
@@ -55,7 +55,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/transparent"
-        app:layout_constraintTop_toTopOf="@+id/main_toolbar"
+        app:layout_constraintTop_toBottomOf="@+id/main_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
     <LinearLayout
