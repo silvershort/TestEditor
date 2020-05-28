@@ -8,7 +8,6 @@ import android.os.Handler
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.daasuu.mp4compose.composer.Mp4Composer
 import com.example.testeditor.dialog.CustomProgressDialog
@@ -53,16 +52,12 @@ class TrimmerActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCha
 
     override fun onResume() {
         super.onResume()
-        if (player != null) {
-            player.playWhenReady = true
-        }
+        player?.playWhenReady = true
     }
 
     override fun onPause() {
         super.onPause()
-        if(player != null) {
-            player.playWhenReady = false
-        }
+        player?.playWhenReady = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

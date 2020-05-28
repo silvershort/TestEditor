@@ -10,4 +10,6 @@
     <string name="common_cannel">Cannel</string>
     <string name="common_wait">Please wait...</string>
     <string name="common_no_change">No changes</string>
+    <string name="common_done">Done</string>
+    <string name="common_seconds">seconds</string>
 </resources>

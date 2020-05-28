@@ -11,4 +11,6 @@
     <string name="common_cannel">취소</string>
     <string name="common_wait">잠시만 기다려주세요...</string>
     <string name="common_no_change">변경사항 없음</string>
+    <string name="common_done">확인</string>
+    <string name="common_seconds">초</string>
 </resources>

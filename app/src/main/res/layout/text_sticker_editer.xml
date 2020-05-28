@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#99000000"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <EditText
+        android:id="@+id/text_sticker_et_input"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:maxLength="20"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/text_sticker_tv_done"
+        android:layout_width="80dp"
+        android:layout_height="60dp"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:padding="10dp"
+        android:text="@string/common_done"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <ScrollView
+        android:id="@+id/text_sticker_scroll_font"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/text_sticker_gothic"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:fontFamily="@font/nanum_gothic"
+                android:gravity="center_vertical"
+                android:padding="10dp"
+                android:textSize="18sp"
+                android:text="텍스트"/>
+
+            <TextView
+                android:id="@+id/text_sticker_pen"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:fontFamily="@font/nanum_pen"
+                android:gravity="center_vertical"
+                android:padding="10dp"
+                android:textSize="18sp"
+                android:text="텍스트"/>
+
+            <TextView
+                android:id="@+id/text_sticker_brush"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:fontFamily="@font/nanum_brush"
+                android:gravity="center_vertical"
+                android:padding="10dp"
+                android:textSize="18sp"
+                android:text="텍스트"/>
+
+            <TextView
+                android:id="@+id/text_sticker_myeogjo"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:fontFamily="@font/nanum_myeongjo"
+                android:gravity="center_vertical"
+                android:padding="10dp"
+                android:textSize="18sp"
+                android:text="텍스트"/>
+
+            <TextView
+                android:id="@+id/text_sticker_square"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:fontFamily="@font/nanum_square_ac"
+                android:gravity="center_vertical"
+                android:padding="10dp"
+                android:textSize="18sp"
+                android:text="텍스트"/>
+
+            <ImageButton
+                android:id="@+id/text_sticker_color"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:adjustViewBounds="true"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_palette_black_24dp"/>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

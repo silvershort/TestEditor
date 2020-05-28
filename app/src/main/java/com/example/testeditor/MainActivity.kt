@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Typeface
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
@@ -16,11 +18,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
-import android.widget.RelativeLayout
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arthenica.mobileffmpeg.*
@@ -34,24 +37,26 @@ import com.example.testeditor.dialog.TextStickerEditDialog
 import com.example.testeditor.mp4filter.FilterAdapter
 import com.example.testeditor.mp4filter.FilterType
 import com.example.testeditor.sound.SoundActivity
-import com.example.testeditor.sticker.StickerImageView
-import com.example.testeditor.sticker.StickerTextView
+import com.example.testeditor.sticker.DrawableSticker
+import com.example.testeditor.sticker.Sticker
+import com.example.testeditor.sticker.StickerView
+import com.example.testeditor.sticker.TextSticker
+import com.example.testeditor.timeline.TimeLineActivity
+import com.example.testeditor.util.BitmapObject
+import com.example.testeditor.util.KeyBoardUtil
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
 import org.jetbrains.anko.toast
+import petrov.kristiyan.colorpicker.ColorPicker
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 import java.lang.Runnable
 
 class MainActivity : AppCompatActivity() {
@@ -80,9 +85,23 @@ class MainActivity : AppCompatActivity() {
     // 프로그래스 다이얼로그
     lateinit var proDialog: CustomProgressDialog
 
+    // 레이아웃
+    lateinit var textEditer: ConstraintLayout
+
+    // 인클루드 레이아웃
+    lateinit var text_sticker_tv_done: TextView
+    lateinit var text_sticker_et_input: EditText
+    lateinit var text_sticker_color: ImageButton
+    lateinit var text_sticker_gothic: TextView
+    lateinit var text_sticker_pen: TextView
+    lateinit var text_sticker_brush: TextView
+    lateinit var text_sticker_myeogjo: TextView
+    lateinit var text_sticker_square: TextView
+
+    var selectColor: Int = -1
+    lateinit var selectTypeface: Typeface
+
     // 스티커 변수
-    var stickerIvList = mutableListOf<StickerImageView>()
-    var stickertvList = mutableListOf<StickerTextView>()
     val imgStickerList = arrayListOf(
         R.drawable.test_sticker1,
         R.drawable.test_sticker2,
@@ -94,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         R.drawable.test_sticker8
     )
     val textStickerEditDialog: TextStickerEditDialog = TextStickerEditDialog()
+    var stickerIndex = 0
 
     // 파일 변환을 위한 변수
     var rootPath: String? = null
@@ -152,6 +172,18 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(main_toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
+        // 레이아웃을 받아옴
+        textEditer = findViewById(R.id.main_include_text_sticker)
+
+        text_sticker_tv_done = textEditer.findViewById(R.id.text_sticker_tv_done)
+        text_sticker_et_input = textEditer.findViewById(R.id.text_sticker_et_input)
+        text_sticker_color = textEditer.findViewById(R.id.text_sticker_color)
+        text_sticker_gothic = textEditer.findViewById(R.id.text_sticker_gothic)
+        text_sticker_pen = textEditer.findViewById(R.id.text_sticker_pen)
+        text_sticker_brush = textEditer.findViewById(R.id.text_sticker_brush)
+        text_sticker_myeogjo = textEditer.findViewById(R.id.text_sticker_myeogjo)
+        text_sticker_square = textEditer.findViewById(R.id.text_sticker_square)
+
         // 사운드 텍스트에 흐르는 글자 효과 적용
         main_tv_sound = findViewById(R.id.main_tv_sound)
         main_tv_sound.isSingleLine = true
@@ -189,10 +221,8 @@ class MainActivity : AppCompatActivity() {
         // 스티커 아이탬 선택시 리스너
         imgStickerAdapter.setOnImgStickerClickListener(object : OnImgStickerClickListener {
             override fun onStickerClick(holder: ImgStickerAdapter.ImgStickerHolder, position: Int) {
-                val imgSticker: StickerImageView = StickerImageView(this@MainActivity)
-                imgSticker.setImageResource(imgStickerList[position])
-                stickerIvList.add(imgSticker)
-                main_layout_sticker.addView(imgSticker)
+                val imgSticker = DrawableSticker(ContextCompat.getDrawable(this@MainActivity, imgStickerList[position]))
+                main_layout_sticker.addSticker(imgSticker)
             }
         })
 
@@ -262,39 +292,13 @@ class MainActivity : AppCompatActivity() {
 
         // 텍스트 스티커 기능
         main_ib_text.setOnClickListener(View.OnClickListener {
-            val textSticker: StickerTextView = StickerTextView(this)
-            stickertvList.add(textSticker)
-
-            textStickerEditDialog.show(supportFragmentManager, "editTextDialog")
-            textStickerEditDialog.setDialogResultInterface(object :
-                TextStickerEditDialog.OnDialogResult {
-                override fun finish(text: String) {
-                    if (!TextUtils.isEmpty(text)) {
-                        textSticker.text = text
-                    }
-                }
-            })
-            main_layout_sticker.addView(textSticker)
-        })
-
-        // 메인 레이아웃 클릭 리스너
-        main_layout_main.setOnClickListener(View.OnClickListener {
-            for (x in stickerIvList) {
-                x.setControlItemsHidden(true)
-            }
-            for (x in stickertvList) {
-                x.setControlItemsHidden(true)
-            }
-        })
-
-        // 스티커 클릭 리스너
-        main_layout_sticker.setOnClickListener(View.OnClickListener {
-            for (x in stickerIvList) {
-                x.setControlItemsHidden(true)
-            }
-            for (x in stickertvList) {
-                x.setControlItemsHidden(true)
-            }
+            val textSticker = TextSticker(this)
+                .setText("테스트 텍스트")
+                .setMaxTextSize(14F)
+                .setTextColor(Color.BLUE)
+                .setTypeface(Typeface.MONOSPACE)
+                .resizeText()
+            main_layout_sticker.addSticker(textSticker, Sticker.Position.TOP)
         })
 
         // 오디오 추가
@@ -335,6 +339,115 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread { toast("변경된 사항이 없습니다.") }
                 }
             }*/
+        })
+
+        // 스티커 리스너
+        main_layout_sticker.onStickerOperationListener = object : StickerView.OnStickerOperationListener{
+            override fun onStickerZoomFinished(sticker: Sticker) {
+            }
+
+            override fun onStickerTimeClicked(sticker: Sticker) {
+                Log.d(TAG, "타임라인 편집 버튼이 눌렸습니다")
+                val intent = Intent(this@MainActivity, TimeLineActivity::class.java)
+                intent.putExtra("path", path)
+                main_layout_sticker.toggle()
+                main_layout_sticker.invisibleNotCurrentSticker(main_layout_sticker.currentSticker!!)
+                BitmapObject.bitmap = stickerDraw()
+                main_layout_sticker.toggle()
+//                intent.putExtra("sticker", stickerDraw())
+                startActivity(intent)
+            }
+
+            override fun onStickerClicked(sticker: Sticker) {
+                Log.d(TAG, "x : ${main_layout_sticker.currentSticker!!.matrix}")
+            }
+
+            override fun onStickerTouchedDown(sticker: Sticker) {
+
+            }
+
+            override fun onStickerDoubleTapped(sticker: Sticker) {
+                if (sticker !is TextSticker) return
+                if (!textEditer.isVisible) {
+                    textEditer.visibility = View.VISIBLE
+                    uiVisibility(false)
+
+                    text_sticker_et_input.requestFocus()
+
+                    KeyBoardUtil.focusAndShowKeyboard(this@MainActivity, text_sticker_et_input)
+                    /*val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showSoftInput(text_sticker_et_input, InputMethodManager.SHOW_IMPLICIT)*/
+                }
+            }
+
+            override fun onStickerDragFinished(sticker: Sticker) {
+            }
+
+            override fun onStickerFlipped(sticker: Sticker) {
+            }
+
+            override fun onStickerDeleted(sticker: Sticker) {
+            }
+
+            override fun onStickerAdded(sticker: Sticker) {
+            }
+        }
+
+        // 컬러 선택 리스너
+        text_sticker_color.setOnClickListener {
+            val colorPicker = ColorPicker(this)
+            colorPicker.show()
+            colorPicker.setOnChooseColorListener(object : ColorPicker.OnChooseColorListener {
+                override fun onChooseColor(position: Int, color: Int) {
+                    selectColor = color
+                    text_sticker_et_input.setTextColor(color)
+                }
+
+                override fun onCancel() {
+
+                }
+            })
+        }
+
+        text_sticker_gothic.setOnClickListener {
+            selectTypeface = ResourcesCompat.getFont(this, R.font.nanum_gothic)!!
+            text_sticker_et_input.typeface = selectTypeface
+        }
+
+        text_sticker_pen.setOnClickListener {
+            selectTypeface = ResourcesCompat.getFont(this, R.font.nanum_pen)!!
+            text_sticker_et_input.typeface = selectTypeface
+        }
+
+        text_sticker_brush.setOnClickListener {
+            selectTypeface = ResourcesCompat.getFont(this, R.font.nanum_brush)!!
+            text_sticker_et_input.typeface = selectTypeface
+        }
+
+        text_sticker_myeogjo.setOnClickListener {
+            selectTypeface = ResourcesCompat.getFont(this, R.font.nanum_myeongjo)!!
+            text_sticker_et_input.typeface = selectTypeface
+        }
+
+        text_sticker_square.setOnClickListener {
+            selectTypeface = ResourcesCompat.getFont(this, R.font.nanum_square_ac)!!
+            text_sticker_et_input.typeface = selectTypeface
+        }
+
+        // 텍스트 스티커 에디터 완료
+        text_sticker_tv_done.setOnClickListener(View.OnClickListener {
+            val tempSticker = main_layout_sticker.currentSticker as TextSticker
+
+            val temp = text_sticker_et_input.text.toString()
+
+            KeyBoardUtil.unfocusAndHideKeyboard(this@MainActivity, text_sticker_et_input)
+            textEditer.visibility = View.GONE
+            uiVisibility(true)
+
+            tempSticker.text = text_sticker_et_input.text.toString()
+            if (selectColor != -1) tempSticker.setTypeface(selectTypeface)
+            if (selectColor != -1) tempSticker.setTextColor(selectColor)
+            tempSticker.resizeText()
         })
     }
 
@@ -396,9 +509,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun executeVideo(type: Int) {
 
-        if (!(stickerIvList.isEmpty() && stickertvList.isEmpty())) {
+        if (main_layout_sticker.isNoneSticker) {
             Log.d(TAG, "스티커 변경")
             combineSticker()
+
 
             val outPath = if (isFilter()) "${cacheDir.canonicalPath}/temp.mp4" else savePath
 
@@ -406,7 +520,9 @@ class MainActivity : AppCompatActivity() {
 //            2-> "-i $path -vf curves=psfile=${tempFilterFile.absolutePath} -y $outPath"
 //            2 -> "-i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, curves=psfile=${tempFilterFile.absolutePath}' -y $outPath"
 //            else-> "-i $path -vf curves=psfile=${Environment.getExternalStorageDirectory().absolutePath + "/" + Environment.DIRECTORY_DCIM}/TEST/afterglow.acv -c:v libx264 -preset ultrafast -c:a copy -y $outPath"
+//                else -> "-y -i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, colorspace=smpte240m' -c:v libx264 -preset ultrafast -c:a copy $outPath"
                 else -> "-y -i $path -i $imgPath -filter_complex '[0:v][1:v]overlay=0:0, colorspace=smpte240m' -c:v libx264 -preset ultrafast -c:a copy $outPath"
+//                else -> "-y -i $path -i $filterPath -filter_complex '[0]split[m][a];[m][a]alphamerge[keyed];[1][keyed]overlay=eof_action=endall' -shortest $outPath"
             }
 
             Log.d (TAG, "cmd : $cmd")
@@ -518,17 +634,16 @@ class MainActivity : AppCompatActivity() {
         }).start()
     }
 
+    private fun stickerDraw(): Bitmap? {
+        val viewBitmap = Bitmap.createBitmap(main_layout_sticker.width, main_layout_sticker.height, Bitmap.Config.ARGB_8888);
+        val canvas = Canvas(viewBitmap)
+        main_layout_sticker.draw(canvas)
+
+        return Bitmap.createScaledBitmap(
+            viewBitmap, main_layout_sticker.width, main_layout_sticker.height,false)
+    }
+
     private fun combineSticker() {
-        for (item in stickerIvList) {
-            item.setControlItemsHidden(true)
-        }
-        for (item in stickertvList) {
-            item.setControlItemsHidden(true)
-        }
-
-//        main_layout_sticker.isDrawingCacheEnabled = true
-//        main_layout_sticker.buildDrawingCache()
-
         val viewBitmap = Bitmap.createBitmap(main_layout_sticker.width, main_layout_sticker.height, Bitmap.Config.ARGB_8888);
         val canvas = Canvas(viewBitmap)
         main_layout_sticker.draw(canvas)
@@ -548,8 +663,6 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "img_height : $imgHeight")
         Log.d(TAG, "view_width : ${main_layout_sticker.width}")
         Log.d(TAG, "view_height : ${main_layout_sticker.height}")
-
-//        Log.d(TAG, "convert : ${(main_layout_sticker.height / (main_layout_sticker.width / videoWidth.toDouble())).toInt()}")
 
         val overlayImage = Bitmap.createScaledBitmap(
             viewBitmap, imgWidth, imgHeight,false)
@@ -572,6 +685,16 @@ class MainActivity : AppCompatActivity() {
             out.close()
         } catch (e: IOException) {
             e.printStackTrace()
+        }
+    }
+
+    private fun uiVisibility(visible: Boolean) {
+        if (visible) {
+            main_toolbar.visibility = View.VISIBLE
+            main_layout_button.visibility = View.VISIBLE
+        } else {
+            main_toolbar.visibility = View.INVISIBLE
+            main_layout_button.visibility = View.INVISIBLE
         }
     }
 
@@ -635,41 +758,6 @@ class MainActivity : AppCompatActivity() {
         videoHeight = streamInfo[0].height.toInt()
         Log.d(TAG, "width : $videoWidth")
         Log.d(TAG, "height : $videoHeight")
-
-        simpleExoPlayer.addListener(object : Player.EventListener {
-            override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
-            }
-
-            override fun onSeekProcessed() {
-            }
-
-            override fun onTracksChanged(
-                trackGroups: TrackGroupArray?,
-                trackSelections: TrackSelectionArray?
-            ) {
-            }
-
-            override fun onPlayerError(error: ExoPlaybackException?) {
-            }
-
-            override fun onLoadingChanged(isLoading: Boolean) {
-            }
-
-            override fun onPositionDiscontinuity(reason: Int) {
-            }
-
-            override fun onRepeatModeChanged(repeatMode: Int) {
-            }
-
-            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-            }
-
-            override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
-            }
-
-            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            }
-        })
     }
 
     private fun setFilePath(rawPath: String?) {
@@ -689,6 +777,7 @@ class MainActivity : AppCompatActivity() {
             GALLERY_REQUEST_CODE -> {
                 // 1번방법
                 if (data != null) {
+                    main_layout_sticker.removeAllStickers()
                     uri = data.data
                     rootPath = getRealPathFromURI(uri!!)
                     setFilePath(getRealPathFromURI(uri!!))

@@ -1,5 +1,7 @@
 package com.example.testeditor
 
+import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ImgStickerAdapter (val items: ArrayList<Int>) : RecyclerView.Adapter<ImgStickerAdapter.ImgStickerHolder>(), OnImgStickerClickListener {
 
+    private val TAG = "!!!ImgStickerAdapter!!!"
     lateinit var listener: OnImgStickerClickListener
 
     class ImgStickerHolder(itemView: View, listener: OnImgStickerClickListener) : RecyclerView.ViewHolder(itemView) {

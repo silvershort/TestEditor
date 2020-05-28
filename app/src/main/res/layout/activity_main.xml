@@ -42,11 +42,16 @@
         app:layout_constraintTop_toBottomOf="@+id/main_toolbar"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
-    <FrameLayout
+    <com.example.testeditor.sticker.StickerView
         android:id="@+id/main_layout_sticker"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/transparent"
+        app:borderAlpha="123"
+        app:borderColor="@android:color/white"
+        app:bringToFrontCurrentSticker="true"
+        app:showBorder="true"
+        app:showIcons="true"
         app:layout_constraintTop_toTopOf="@+id/main_playerview"
         app:layout_constraintBottom_toBottomOf="@+id/main_playerview"/>
 
@@ -91,15 +96,6 @@
             android:adjustViewBounds="true"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_content_cut_black_24dp" />
-
-        <ImageButton
-            android:id="@+id/main_ib_crop"
-            android:layout_width="40dp"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="5dp"
-            android:adjustViewBounds="true"
-            android:background="@android:color/transparent"
-            android:src="@drawable/ic_crop_black_24dp" />
 
         <ImageButton
             android:id="@+id/main_ib_filter"
@@ -148,5 +144,14 @@
         android:layout_height="wrap_content"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <include
+        android:id="@+id/main_include_text_sticker"
+        layout="@layout/text_sticker_editer"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

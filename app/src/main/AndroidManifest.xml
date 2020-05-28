@@ -17,10 +17,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".crop.CropActivity"></activity>
+        <activity android:name=".timeline.TimeLineActivity"></activity>
         <activity android:name=".sound.SoundActivity" />
         <activity android:name=".TrimmerActivity" />
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MainActivity"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
