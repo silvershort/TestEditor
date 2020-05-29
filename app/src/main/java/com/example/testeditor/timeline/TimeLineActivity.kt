@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.MenuItem
+import android.view.View
 import com.example.testeditor.R
 import com.example.testeditor.util.BitmapObject
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -20,6 +21,10 @@ import com.google.android.exoplayer2.util.Util
 import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_time_line.*
 import kotlinx.android.synthetic.main.activity_trimmer.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.DecimalFormat
 import kotlin.math.pow
@@ -40,6 +45,11 @@ class TimeLineActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCh
         }
     }
     private val path: String by lazy { intent.getStringExtra("path") }
+    private var currentPosition: Long = 0
+    private var startTimeLine: Long = 0
+    private var endTimeLine: Long = 0
+
+    private var timelineJob: Job? = null
 
     override fun onResume() {
         super.onResume()
@@ -47,8 +57,8 @@ class TimeLineActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCh
     }
 
     override fun onPause() {
-        super.onPause()
         player.playWhenReady = false
+        super.onPause()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +70,22 @@ class TimeLineActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCh
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         timeline_sticker.setImageBitmap(BitmapObject.bitmap)
+
+        GlobalScope.launch {
+            while (true) {
+                delay(100L)
+                // ExoPlayer의 현재 재생 위치를 저장
+                currentPosition = player.currentPosition
+                Log.d(TAG, "타임라인 : $currentPosition")
+
+                // 현재 재생 위치가 지정한 범위 안에 있는지 확인 후 스티커 visible 상태 변경
+                if (currentPosition in startTimeLine..endTimeLine) {
+                    runOnUiThread { timeline_sticker.visibility = View.VISIBLE }
+                } else {
+                    runOnUiThread { timeline_sticker.visibility = View.GONE }
+                }
+            }
+        }
 
         Handler().postDelayed({
             timeline_trimmerview
@@ -85,6 +111,8 @@ class TimeLineActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCh
 
     override fun onSelectRangeEnd(startMillis: Long, endMillis: Long) {
         showDuration(startMillis, endMillis)
+        startTimeLine = startMillis
+        endTimeLine = endMillis
         player.seekTo(startMillis)
         player.playWhenReady = true
     }
@@ -124,5 +152,14 @@ class TimeLineActivity : AppCompatActivity(), VideoTrimmerView.OnSelectedRangeCh
     override fun onBackPressed() {
         player.release()
         super.onBackPressed()
+    }
+
+    inner class ProgressThread : Thread() {
+        override fun run() {
+            while(true) {
+                currentPosition = player.currentPosition
+                sleep(100);
+            }
+        }
     }
 }

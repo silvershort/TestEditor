@@ -24,6 +24,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.drawToBitmap
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arthenica.mobileffmpeg.*
@@ -350,11 +351,10 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "타임라인 편집 버튼이 눌렸습니다")
                 val intent = Intent(this@MainActivity, TimeLineActivity::class.java)
                 intent.putExtra("path", path)
+
                 main_layout_sticker.toggle()
-                main_layout_sticker.invisibleNotCurrentSticker(main_layout_sticker.currentSticker!!)
                 BitmapObject.bitmap = stickerDraw()
                 main_layout_sticker.toggle()
-//                intent.putExtra("sticker", stickerDraw())
                 startActivity(intent)
             }
 

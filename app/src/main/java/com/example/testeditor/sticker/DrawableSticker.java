@@ -55,12 +55,11 @@ public class DrawableSticker extends Sticker {
 
   @Override
   public void setVisible(boolean visible) {
-
-    Log.d("!!!", "setVisible() 호출됨");
-
     if (visible) {
+      Log.d("!!!", "setVisible() 호출됨 : true");
       drawable.setVisible(true, false);
     } else {
+      Log.d("!!!", "setVisible() 호출됨 : false");
       drawable.setVisible(false, false);
     }
   }

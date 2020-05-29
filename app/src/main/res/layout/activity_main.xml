@@ -49,9 +49,19 @@
         android:background="@android:color/transparent"
         app:borderAlpha="123"
         app:borderColor="@android:color/white"
-        app:bringToFrontCurrentSticker="true"
         app:showBorder="true"
         app:showIcons="true"
+        app:layout_constraintTop_toTopOf="@+id/main_playerview"
+        app:layout_constraintBottom_toBottomOf="@+id/main_playerview"/>
+
+    <com.example.testeditor.sticker.StickerView
+        android:id="@+id/main_layout_sticker_tobitmap"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/transparent"
+        android:visibility="gone"
+        app:borderAlpha="123"
+        app:borderColor="@android:color/white"
         app:layout_constraintTop_toTopOf="@+id/main_playerview"
         app:layout_constraintBottom_toBottomOf="@+id/main_playerview"/>
 

@@ -42,7 +42,7 @@ public class StickerView extends FrameLayout {
 
   private boolean showIcons;
   private boolean showBorder;
-//  private final boolean bringToFrontCurrentSticker;
+  private final boolean bringToFrontCurrentSticker;
 
   private ArrayList<Sticker> stickerList = new ArrayList<>();
 
@@ -124,8 +124,8 @@ public class StickerView extends FrameLayout {
       a = context.obtainStyledAttributes(attrs, R.styleable.StickerView);
       showIcons = a.getBoolean(R.styleable.StickerView_showIcons, false);
       showBorder = a.getBoolean(R.styleable.StickerView_showBorder, false);
-      /*bringToFrontCurrentSticker =
-          a.getBoolean(R.styleable.StickerView_bringToFrontCurrentSticker, false);*/
+      bringToFrontCurrentSticker =
+          a.getBoolean(R.styleable.StickerView_bringToFrontCurrentSticker, false);
 
       borderPaint.setAntiAlias(true);
       borderPaint.setColor(a.getColor(R.styleable.StickerView_borderColor, Color.BLACK));
@@ -373,10 +373,10 @@ public class StickerView extends FrameLayout {
 
     if (handlingSticker != null) {
       downMatrix.set(handlingSticker.getMatrix());
-      /*if (bringToFrontCurrentSticker) {
+      if (bringToFrontCurrentSticker) {
         stickers.remove(handlingSticker);
         stickers.add(handlingSticker);
-      }*/
+      }
       if (onStickerOperationListener != null){
         onStickerOperationListener.onStickerTouchedDown(handlingSticker);
       }
@@ -718,15 +718,6 @@ public class StickerView extends FrameLayout {
 
   public boolean removeCurrentSticker() {
     return remove(handlingSticker);
-  }
-
-  public void invisibleNotCurrentSticker(@NonNull Sticker sticker) {
-    for (Sticker item : stickers) {
-      if (item == sticker) {
-        continue;
-      }
-      item.setVisible(false);
-    }
   }
 
   public void removeAllStickers() {
