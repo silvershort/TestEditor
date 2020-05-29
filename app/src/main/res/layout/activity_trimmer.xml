@@ -68,4 +68,8 @@
         app:vtv_window_left_bar="@drawable/trimmer_left_bar"
         app:vtv_window_right_bar="@drawable/trimmer_right_bar"/>
 
+    <com.example.testeditor.util.CropView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
